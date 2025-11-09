@@ -65,7 +65,15 @@ function cborDebug(cborValue: Cbor): string {
           case 'Null':
             return 'simple(null)';
           case 'Float':
-            return `simple(${simple.value})`;
+            // Format float values properly (inf, -inf, NaN)
+            const f = simple.value;
+            if (isNaN(f)) {
+              return 'simple(NaN)';
+            } else if (!isFinite(f)) {
+              return f > 0 ? 'simple(inf)' : 'simple(-inf)';
+            } else {
+              return `simple(${f})`;
+            }
         }
       }
       return 'simple';
@@ -628,8 +636,8 @@ describe('encode tests', () => {
 
       // For objects like ByteString, compare data; for primitives, compare values
       if (value instanceof ByteString) {
-        expect((value2 as ByteString).data).toEqual(value.data);
-        expect((value3 as ByteString).data).toEqual(value.data);
+        expect(value2).toEqual(value.data());
+        expect(value3).toEqual(value.data());
       } else {
         expect(value2).toEqual(value);
         expect(value3).toEqual(value);

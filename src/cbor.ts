@@ -234,10 +234,24 @@ export function cbor(value: Cbor | any): Cbor {
     return { isCbor: true, type: MajorType.Map, value: value };
   } else if (value instanceof Map) {
     return { isCbor: true, type: MajorType.Map, value: new CborMap(value) };
+  } else if (value instanceof Set) {
+    return { isCbor: true, type: MajorType.Array, value: Array.from(value).map(cbor) };
   } else if ('taggedCbor' in value && typeof value.taggedCbor === 'function') {
     return value.taggedCbor();
   } else if ('toCbor' in value && typeof value.toCbor === 'function') {
     return value.toCbor();
+  } else if (typeof value === 'object' && value !== null && 'tag' in value && 'value' in value) {
+    // Handle plain tagged value format: { tag: number, value: any }
+    const keys = Object.keys(value);
+    if (keys.length === 2 && keys.includes('tag') && keys.includes('value')) {
+      return taggedCbor((value as any).tag, (value as any).value);
+    }
+    // Not a tagged value, fall through to map handling
+    const map = new CborMap();
+    for (const [key, val] of Object.entries(value)) {
+      map.set(cbor(key), cbor(val));
+    }
+    return { isCbor: true, type: MajorType.Map, value: map };
   } else if (typeof value === 'object' && value !== null) {
     // Handle plain objects by converting to CborMap
     const map = new CborMap();

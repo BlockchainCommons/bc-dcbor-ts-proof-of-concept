@@ -446,9 +446,13 @@ function formatFloat(value: number): string {
   } else if (!isFinite(value)) {
     return value > 0 ? 'Infinity' : '-Infinity';
   } else {
-    // Show decimal point for clarity
+    // Show decimal point for clarity, unless already in scientific notation
     const str = String(value);
-    return str.includes('.') ? str : `${str}.0`;
+    // Scientific notation (contains 'e') or already has decimal point
+    if (str.includes('.') || str.includes('e')) {
+      return str;
+    }
+    return `${str}.0`;
   }
 }
 

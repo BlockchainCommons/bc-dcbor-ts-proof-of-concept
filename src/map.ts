@@ -210,7 +210,7 @@ export class CborMap {
     }
     const lastEntryKey = this.makeKey(lastEntry.key);
     if(lexicographicallyCompareBytes(newKey, lastEntryKey) <= 0) {
-      throw new Error('map keys must be in ascending order');
+      throw new Error('map keys must be in ascending canonical order');
     }
     this.dict.set(newKey, { key: keyCbor, value: cbor(value) });
   }

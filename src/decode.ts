@@ -7,7 +7,7 @@ export function decodeCbor(data: Uint8Array): Cbor {
   const {cbor, len} = decodeCborInternal(new DataView(data.buffer, data.byteOffset, data.byteLength));
   const remaining = data.length - len;
   if (remaining !== 0) {
-    throw new Error(`Unused data: ${remaining}`);
+    throw new Error(`Extra bytes after CBOR: ${remaining}`);
   }
   return cbor;
 }

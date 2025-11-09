@@ -181,9 +181,9 @@ export function f32CborData(value: number): Uint8Array {
     return CBOR_NAN;
   }
 
-  // Encode as f32
-  const bits = new DataView(numberToBinary32(n).buffer).getUint32(0, false);
-  return encodeVarInt(bits, MajorType.Simple);
+  // Encode as f32 - always use 0xfa prefix with 4 bytes
+  const bytes = numberToBinary32(n);
+  return new Uint8Array([0xfa, ...bytes]);
 }
 
 /**
@@ -227,9 +227,9 @@ export function f16CborData(value: number): Uint8Array {
     return CBOR_NAN;
   }
 
-  // Encode as f16
-  const bits = new DataView(numberToBinary16(value).buffer).getUint16(0, false);
-  return encodeVarInt(bits, MajorType.Simple);
+  // Encode as f16 - always use 0xf9 prefix with 2 bytes
+  const bytes = numberToBinary16(value);
+  return new Uint8Array([0xf9, ...bytes]);
 }
 
 /**
