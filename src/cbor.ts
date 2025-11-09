@@ -38,6 +38,7 @@ export type CborEncodable =
   | CborMap
   | CborEncodable[]
   | Map<unknown, unknown>
+  | Set<unknown>
   | { [key: string]: unknown };
 
 export function isCborNumber(value: unknown): value is CborNumber {
@@ -257,7 +258,7 @@ export function cbor(value: CborEncodable): Cbor {
   } else if (value instanceof Map) {
     return { isCbor: true, type: MajorType.Map, value: new CborMap(value) };
   } else if (value instanceof Set) {
-    return { isCbor: true, type: MajorType.Array, value: Array.from(value).map(cbor) };
+    return { isCbor: true, type: MajorType.Array, value: Array.from(value).map(v => cbor(v as CborEncodable)) };
   } else if (typeof value === 'object' && value !== null && 'taggedCbor' in value && typeof value.taggedCbor === 'function') {
     return value.taggedCbor();
   } else if (typeof value === 'object' && value !== null && 'toCbor' in value && typeof value.toCbor === 'function') {

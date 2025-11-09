@@ -6,7 +6,7 @@
  * All 35 test functions from the Rust version are translated here.
  */
 
-import { cbor, cborData, Cbor, toTaggedValue } from '../src/cbor';
+import { cbor, cborData, Cbor, CborEncodable, toTaggedValue } from '../src/cbor';
 import { diagnostic, diagnosticFlat } from '../src/diag';
 import { decodeCbor } from '../src/decode';
 import { hex } from '../src/dump';
@@ -181,7 +181,7 @@ function testCborCodable(
   const value2 = extractCbor(decodedCbor);
 
   // Re-encode
-  cborValue = cbor(value2);
+  cborValue = cbor(value2 as CborEncodable);
   assertActualExpected(cborDebug(cborValue), expectedDebug);
   assertActualExpected(cborDiagnostic(cborValue), expectedDisplay);
 
@@ -416,7 +416,7 @@ describe('encode tests', () => {
     const data = cborData(cborValue);
     const decodedCbor = decodeCbor(data);
 
-    const extractedArray = extractCbor(decodedCbor);
+    const extractedArray = extractCbor(decodedCbor) as unknown[];
     expect(extractedArray[0]).toBe(1);
     expect(extractedArray[1]).toBe('Hello');
     expect(extractedArray[2]).toEqual([1, 2, 3]);
@@ -571,7 +571,7 @@ describe('encode tests', () => {
     const c = cbor(n);
     const f = extractCbor(c); // Simulate f64::try_from_cbor
     expect(f).toBe(n);
-    const c2 = cbor(f);
+    const c2 = cbor(f as CborEncodable);
     expect(cborData(c2)).toEqual(cborData(c));
     const i = extractCbor(c);
     expect(i).toBe(n);
@@ -711,7 +711,7 @@ describe('encode tests', () => {
     const v = new Set<number>([1, 50, 25]);
     const c = cbor(v);
 
-    const v2 = new Set(extractCbor(c));
+    const v2 = new Set(extractCbor(c) as Iterable<number>);
     expect(v2.has(1)).toBe(true);
     expect(v2.has(50)).toBe(true);
     expect(v2.has(25)).toBe(true);
