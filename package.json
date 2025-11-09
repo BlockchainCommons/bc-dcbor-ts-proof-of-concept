@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "scripts": {
     "test": "jest",
-    "compile": "tsc"
+    "compile": "tsc",
+    "test-examples": "npm run compile && node scripts/test-examples.js"
   },
   "keywords": [],
   "author": "",
