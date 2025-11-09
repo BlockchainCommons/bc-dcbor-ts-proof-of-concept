@@ -15,7 +15,7 @@ import { CborMap } from './map';
 import { encodeVarInt } from './varint';
 import { flanked, sanitized } from './string-util';
 import { TagsStore } from './tags-store';
-import { Tag, createTag } from './tag';
+import { createTag } from './tag';
 
 /**
  * Options for hex formatting.
@@ -96,6 +96,7 @@ export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
 export function hexAnnotated(cbor: Cbor, tagsStore?: TagsStore): string {
   // Use global tags store if not provided
   if (!tagsStore) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, no-undef
     const { getGlobalTagsStore } = require('./tags-store');
     tagsStore = getGlobalTagsStore();
   }
@@ -269,6 +270,7 @@ function dumpItems(
     }
 
     case MajorType.Tagged: {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const tagValue = cbor.tag!;
       const header = encodeVarInt(
         typeof tagValue === 'bigint' ? Number(tagValue) : tagValue,

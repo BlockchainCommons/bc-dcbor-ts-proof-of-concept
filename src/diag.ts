@@ -11,10 +11,8 @@
  */
 
 import { Cbor, MajorType } from './cbor';
-import { isFloat } from './simple';
 import { bytesToHex } from './dump';
 import { TagsStore, getGlobalTagsStore } from './tags-store';
-import { Tag } from './tag';
 import type { WalkElement } from './walk';
 
 /**
@@ -155,7 +153,9 @@ export function diagnosticAnnotated(cbor: Cbor): string {
  * // "[[1, 2], [3, 4]]"
  * ```
  */
+// eslint-disable-next-line no-redeclare
 export function diagnosticFlat(cbor: Cbor): string;
+// eslint-disable-next-line no-redeclare
 export function diagnosticFlat(element: WalkElement): string;
 export function diagnosticFlat(input: Cbor | WalkElement): string {
   // Check if it's a WalkElement by checking for 'type' property

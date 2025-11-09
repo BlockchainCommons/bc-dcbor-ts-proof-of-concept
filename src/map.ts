@@ -52,7 +52,7 @@ export class CborMap {
     this.dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
 
     if (map !== undefined) {
-      for (let [key, value] of map.entries()) {
+      for (const [key, value] of map.entries()) {
         this.set(key, value);
       }
     }
@@ -71,9 +71,9 @@ export class CborMap {
    * Matches Rust's Map::insert().
    */
   set<K, V>(key: K, value: V): void {
-    let keyCbor = cbor(key);
-    let valueCbor = cbor(value);
-    let keyData = cborData(keyCbor);
+    const keyCbor = cbor(key);
+    const valueCbor = cbor(value);
+    const keyData = cborData(keyCbor);
     this.dict.set(keyData, { key: keyCbor, value: valueCbor });
   }
 
@@ -85,7 +85,7 @@ export class CborMap {
   }
 
   private makeKey<K>(key: K): MapKey {
-    let keyCbor = cbor(key);
+    const keyCbor = cbor(key);
     return cborData(keyCbor);
   }
 
@@ -95,8 +95,8 @@ export class CborMap {
    * Matches Rust's Map::get().
    */
   get<K, V>(key: K): V | undefined {
-    let keyData = this.makeKey(key);
-    let value = this.dict.get(keyData);
+    const keyData = this.makeKey(key);
+    const value = this.dict.get(keyData);
     if (value === undefined) {
       return undefined;
     }
@@ -122,19 +122,19 @@ export class CborMap {
    * Matches Rust's Map::contains_key().
    */
   containsKey<K>(key: K): boolean {
-    let keyData = this.makeKey(key);
+    const keyData = this.makeKey(key);
     return this.dict.has(keyData);
   }
 
   delete<K>(key: K): boolean {
-    let keyData = this.makeKey(key);
+    const keyData = this.makeKey(key);
     const existed = this.dict.has(keyData);
     this.dict.delete(keyData);
     return existed;
   }
 
   has<K>(key: K): boolean {
-    let keyData = this.makeKey(key);
+    const keyData = this.makeKey(key);
     return this.dict.has(keyData);
   }
 
