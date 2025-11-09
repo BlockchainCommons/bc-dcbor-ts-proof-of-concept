@@ -81,7 +81,7 @@ export {
   CborCodable,
   CborEncodable,
   CborDecodable
-} from './codable';
+} from './cbor-codable';
 
 // Error types
 export {
