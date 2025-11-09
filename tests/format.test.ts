@@ -12,6 +12,7 @@
 import {
   cbor,
   Cbor,
+  CborEncodable,
   CborMap,
   diagnostic,
   diagnosticFlat,
@@ -23,9 +24,10 @@ import {
   CborDate
 } from '../src';
 import { getGlobalTagsStore } from '../src/tags-store';
+import type { MapEntry } from '../src/map';
 
 // Helper function to get description (matches Rust's format!("{}", cbor))
-function cborDescription(value: any): string {
+function cborDescription(value: CborEncodable): string {
   const cborValue = cbor(value);
   // Matches Rust's Display trait - uses tag names instead of numbers
   return formatAsDisplay(cborValue);
@@ -54,13 +56,13 @@ function formatAsDisplay(cborValue: Cbor): string {
     case 3: // Text
       return `"${cborValue.value}"`;
     case 4: { // Array
-      const items = cborValue.value.map((item: any) => formatAsDisplay(item));
+      const items = (cborValue.value as Cbor[]).map((item: Cbor) => formatAsDisplay(item));
       return `[${items.join(', ')}]`;
     }
     case 5: { // Map
       const map = cborValue.value as CborMap;
       if (map && map.entries) {
-        const entries = map.entries.map((entry: any) =>
+        const entries = map.entries.map((entry: MapEntry) =>
           `${formatAsDisplay(entry.key)}: ${formatAsDisplay(entry.value)}`
         );
         return `{${entries.join(', ')}}`;
@@ -95,14 +97,14 @@ function formatAsDisplay(cborValue: Cbor): string {
 }
 
 // Helper function to get debug description (matches Rust's format!("{:?}", cbor))
-function cborDebugDescription(value: any): string {
+function cborDebugDescription(value: CborEncodable): string {
   const cborValue = cbor(value);
   // Generate debug format with type information
   return generateDebugDescription(cborValue);
 }
 
 // Generate debug description with full type information
-function generateDebugDescription(cborValue: any): string {
+function generateDebugDescription(cborValue: Cbor): string {
   if (!cborValue || !cborValue.isCbor) {
     return String(cborValue);
   }
@@ -128,7 +130,7 @@ function generateDebugDescription(cborValue: any): string {
       return `text("${cborValue.value}")`;
 
     case 4: { // Array
-      const items = cborValue.value.map((item: any) => generateDebugDescription(item));
+      const items = (cborValue.value as Cbor[]).map((item: Cbor) => generateDebugDescription(item));
       return `array([${items.join(', ')}])`;
     }
 
@@ -171,7 +173,7 @@ function generateDebugDescription(cborValue: any): string {
 }
 
 // Helper function to get diagnostic output (matches Rust's cbor.diagnostic())
-function cborDiagnostic(value: any): string {
+function cborDiagnostic(value: CborEncodable): string {
   const cborValue = cbor(value);
   // Use library's diagnostic function (flat output)
   return diagnostic(cborValue);
@@ -179,31 +181,31 @@ function cborDiagnostic(value: any): string {
 
 
 // Helper function to get annotated diagnostic (matches Rust's cbor.diagnostic_annotated())
-function cborDiagnosticAnnotated(value: any): string {
+function cborDiagnosticAnnotated(value: CborEncodable): string {
   const cborValue = cbor(value);
   return diagnosticAnnotated(cborValue);
 }
 
 // Helper function to get flat diagnostic (matches Rust's cbor.diagnostic_flat())
-function cborDiagnosticFlat(value: any): string {
+function cborDiagnosticFlat(value: CborEncodable): string {
   const cborValue = cbor(value);
   return diagnosticFlat(cborValue);
 }
 
 // Helper function to get summary (matches Rust's cbor.summary())
-function cborSummary(value: any): string {
+function cborSummary(value: CborEncodable): string {
   const cborValue = cbor(value);
   return summary(cborValue);
 }
 
 // Helper function to get hex (matches Rust's cbor.hex())
-function cborHex(value: any): string {
+function cborHex(value: CborEncodable): string {
   const cborValue = cbor(value);
   return hex(cborValue);
 }
 
 // Helper function to get annotated hex (matches Rust's cbor.hex_annotated())
-function cborHexAnnotated(value: any): string {
+function cborHexAnnotated(value: CborEncodable): string {
   const cborValue = cbor(value);
   return hexAnnotated(cborValue);
 }
@@ -211,7 +213,7 @@ function cborHexAnnotated(value: any): string {
 // Main test runner function - matches Rust's run() function
 function run(
   testName: string,
-  cborValue: any,
+  cborValue: CborEncodable,
   expectedDescription: string,
   expectedDebugDescription: string,
   expectedDiagnostic: string,

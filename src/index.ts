@@ -10,6 +10,7 @@
 // Core CBOR types and encoding/decoding
 export {
   Cbor,
+  CborEncodable,
   MajorType,
   CborUnsignedType,
   CborNegativeType,

@@ -39,19 +39,21 @@
 
 import {
   cbor,
+  CborEncodable,
   CborMap,
   walk,
   WalkElement,
   diagnosticFlat
 } from '../src';
+import { EdgeTypeVariant } from '../src/walk';
 
 // Helper function to count total visits
-function countVisits(cborValue: any): number {
+function countVisits(cborValue: CborEncodable): number {
   let count = 0;
   const visitor = (
     _element: WalkElement,
     _level: number,
-    _edge: any,
+    _edge: EdgeTypeVariant,
     state: void
   ): [void, boolean] => {
     count++;
@@ -114,7 +116,7 @@ describe('walk tests', () => {
     const visitor = (
       element: WalkElement,
       _level: number,
-      _edge: any,
+      _edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       if (element.type === 'single') {
@@ -149,7 +151,7 @@ describe('walk tests', () => {
     const visitor = (
       element: WalkElement,
       level: number,
-      edge: any,
+      edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       const edgeStr = edge.type === 'array_element' ? `ArrayElement(${edge.index})` : edge.type;
@@ -234,7 +236,7 @@ describe('walk tests', () => {
     const visitor = (
       _element: WalkElement,
       level: number,
-      _edge: any,
+      _edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       elementsByLevel[level] = (elementsByLevel[level] || 0) + 1;
@@ -273,7 +275,7 @@ describe('walk tests', () => {
     const visitor = (
       element: WalkElement,
       _level: number,
-      _edge: any,
+      _edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       if (element.type === 'single') {
@@ -318,12 +320,12 @@ describe('walk tests', () => {
     map.insert('a', [1, 2]);
     map.insert('b', 42);
 
-    const traversalLog: Array<[string, any]> = [];
+    const traversalLog: Array<[string, EdgeTypeVariant]> = [];
 
     const visitor = (
       element: WalkElement,
       _level: number,
-      edge: any,
+      edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       const desc = element.type === 'single'
@@ -361,12 +363,12 @@ describe('walk tests', () => {
     const innerTagged = { isCbor: true as const, type: 6 as const, tag: 123, value: cbor([1, 2, 3]) };
     const outerTagged = { isCbor: true as const, type: 6 as const, tag: 456, value: innerTagged };
 
-    const edgeLog: any[] = [];
+    const edgeLog: EdgeTypeVariant[] = [];
 
     const visitor = (
       _element: WalkElement,
       _level: number,
-      edge: any,
+      edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       edgeLog.push(edge);
@@ -381,11 +383,11 @@ describe('walk tests', () => {
     expect(edgeLog[1].type).toBe('tagged_content'); // Inner tagged value
     expect(edgeLog[2].type).toBe('tagged_content'); // Array content of inner tagged
     expect(edgeLog[3].type).toBe('array_element'); // First array element
-    expect(edgeLog[3].index).toBe(0);
+    if (edgeLog[3].type === 'array_element') expect(edgeLog[3].index).toBe(0);
     expect(edgeLog[4].type).toBe('array_element'); // Second array element
-    expect(edgeLog[4].index).toBe(1);
+    if (edgeLog[4].type === 'array_element') expect(edgeLog[4].index).toBe(1);
     expect(edgeLog[5].type).toBe('array_element'); // Third array element
-    expect(edgeLog[5].index).toBe(2);
+    if (edgeLog[5].type === 'array_element') expect(edgeLog[5].index).toBe(2);
   });
 
   /// Test map key-value semantics
@@ -400,7 +402,7 @@ describe('walk tests', () => {
     const visitor = (
       element: WalkElement,
       _level: number,
-      edge: any,
+      edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       if (element.type === 'keyvalue') {
@@ -434,7 +436,7 @@ describe('walk tests', () => {
     const visitor = (
       element: WalkElement,
       level: number,
-      edge: any,
+      edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       const edgeStr = edge.type === 'array_element' ? `ArrayElement(${edge.index})` : edge.type;
@@ -535,7 +537,7 @@ describe('walk tests', () => {
     const visitor = (
       element: WalkElement,
       _level: number,
-      _edge: any,
+      _edge: EdgeTypeVariant,
       state: void
     ): [void, boolean] => {
       if (element.type === 'single') {

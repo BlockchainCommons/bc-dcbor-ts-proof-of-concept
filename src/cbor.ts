@@ -7,6 +7,8 @@ import { concatBytes } from "./stdlib";
 import { bytesToHex } from "./dump";
 import { hexToBytes } from "./dump";
 import { Tag } from "./tag";
+import type { ByteString } from "./byte-string";
+import type { CborDate } from "./date";
 
 export type { Simple };
 
@@ -35,6 +37,8 @@ export type CborEncodable =
   | null
   | undefined
   | Uint8Array
+  | ByteString
+  | CborDate
   | CborMap
   | CborEncodable[]
   | Map<unknown, unknown>

@@ -633,7 +633,7 @@ describe('encode tests', () => {
 
   // Test 24: convert_values
   describe('convert_values', () => {
-    function testConvert(value: any) {
+    function testConvert(value: CborEncodable) {
       const cborValue = cbor(value);
       const value2 = extractCbor(cborValue);
 
