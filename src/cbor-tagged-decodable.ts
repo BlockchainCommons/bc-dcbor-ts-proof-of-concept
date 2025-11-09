@@ -14,7 +14,6 @@
  */
 
 import { Cbor, MajorType } from './cbor';
-import { decodeCbor } from './decode';
 import { CBORTagged } from './cbor-tagged';
 import { Tag } from './tag';
 

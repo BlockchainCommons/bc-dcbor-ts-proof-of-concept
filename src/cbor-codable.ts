@@ -19,7 +19,7 @@
  * @module cbor-codable
  */
 
-import { Cbor, cborData } from './cbor';
+import { Cbor } from './cbor';
 
 /**
  * Interface for types that can be encoded to CBOR.

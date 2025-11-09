@@ -17,7 +17,7 @@
  * @module cbor-tagged-encodable
  */
 
-import { Cbor, MajorType, CborTaggedType, cborData } from './cbor';
+import { Cbor, MajorType, CborTaggedType } from './cbor';
 import { CBORTagged } from './cbor-tagged';
 
 /**
