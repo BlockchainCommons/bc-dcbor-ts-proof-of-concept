@@ -28,7 +28,10 @@ export function cbor(value: Cbor | any): Cbor {
       return { isCbor: true, type: MajorType.Unsigned, value: value };
     }
   } else if (typeof value === 'string') {
-    return { isCbor: true, type: MajorType.Text, value: value };
+    // dCBOR requires all text strings to be in Unicode Normalization Form C (NFC)
+    // This ensures deterministic encoding regardless of how the string was composed
+    const normalized = value.normalize('NFC');
+    return { isCbor: true, type: MajorType.Text, value: normalized };
   } else if (value === null) {
     return Cbor.null;
   } else if (value === true) {
