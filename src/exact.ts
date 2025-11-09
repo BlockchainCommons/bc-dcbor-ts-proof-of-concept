@@ -13,7 +13,7 @@
  * @module exact
  */
 
-import { binary16ToNumber, binary32ToNumber, binary64ToNumber, numberToBinary16, numberToBinary32 } from './float';
+import { binary16ToNumber, binary32ToNumber, numberToBinary16, numberToBinary32 } from './float';
 
 // TypeScript doesn't have native integer types with overflow, so we use number for most operations
 // and bigint for values that exceed Number.MAX_SAFE_INTEGER
@@ -21,11 +21,6 @@ import { binary16ToNumber, binary32ToNumber, binary64ToNumber, numberToBinary16,
 // Helper to check if a number has a fractional part
 function hasFract(n: number): boolean {
   return n % 1 !== 0;
-}
-
-// Helper to convert f16 value (as number) to f64 for checking
-function f16ToF64(f16Bits: Uint8Array): number {
-  return binary16ToNumber(f16Bits);
 }
 
 /**

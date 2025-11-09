@@ -8,8 +8,7 @@
  */
 
 import { Cbor, CborNumber } from './cbor';
-import { Tag, createTag, tagToString } from './tag';
-import { ALL_STANDARD_TAGS } from './tags';
+import { Tag } from './tag';
 
 /**
  * Function type for custom CBOR value summarizers.

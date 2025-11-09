@@ -8,7 +8,6 @@
  */
 
 import { Cbor, MajorType, CborMapType, CborArrayType, CborTaggedType } from './cbor';
-import { CborMap } from './map';
 
 /**
  * Types of edges in the CBOR tree traversal.

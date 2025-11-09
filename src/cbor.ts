@@ -87,6 +87,7 @@ export const Cbor = {
    * @throws Error if the data is not valid CBOR or violates dCBOR encoding rules
    */
   tryFromData(data: Uint8Array): Cbor {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, no-undef
     const { decodeCbor } = require('./decode');
     return decodeCbor(data);
   },
@@ -144,6 +145,7 @@ export const Cbor = {
    * @returns A string in CBOR diagnostic notation
    */
   toString(cbor: Cbor): string {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, no-undef
     const { cborDiagnostic } = require('./diag');
     return cborDiagnostic(cbor, { flat: true });
   },
@@ -157,6 +159,7 @@ export const Cbor = {
    * @returns A string with type annotations
    */
   toDebugString(cbor: Cbor): string {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, no-undef
     const { cborDebug } = require('./debug');
     return cborDebug(cbor);
   },
@@ -168,6 +171,7 @@ export const Cbor = {
    * @returns A multi-line string in CBOR diagnostic notation
    */
   toDiagnostic(cbor: Cbor): string {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires, no-undef
     const { cborDiagnostic } = require('./diag');
     return cborDiagnostic(cbor, { flat: false });
   },

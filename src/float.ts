@@ -25,7 +25,7 @@
 import * as byteData from "byte-data";
 import { encodeVarInt } from './varint';
 import { MajorType } from './cbor';
-import { ExactU64, ExactU32, ExactU16, ExactI128, ExactF64, ExactF32, ExactF16 } from './exact';
+import { ExactU64, ExactU32, ExactU16, ExactI128 } from './exact';
 
 /**
  * Canonical NaN representation in CBOR: 0xf97e00
