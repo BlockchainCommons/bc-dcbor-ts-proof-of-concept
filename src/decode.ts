@@ -194,7 +194,9 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
             case 22:
               return { cbor: Cbor.null, len: varIntLen };
             default:
-              return { cbor: { isCbor: true, type: MajorType.Simple, value: value }, len: varIntLen };
+              // Other simple values - stored as number for compatibility
+              // Per dCBOR spec, only false/true/null/floats are valid, but we handle others for compatibility
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: Number(value) }, len: varIntLen };
           }
       }
   }

@@ -19,8 +19,18 @@ export {
   CborMapType,
   CborTaggedType,
   CborSimpleType,
-  SimpleValue
 } from './cbor';
+
+// Simple value types
+export {
+  Simple,
+  SimpleValue,
+  isSimpleValue,
+  isSimpleFloat,
+  simpleName,
+  isFloat,
+  isNaN,
+} from './simple';
 
 export { cbor } from './encode';
 export { decode } from './decode';

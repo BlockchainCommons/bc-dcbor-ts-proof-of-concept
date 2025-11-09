@@ -7,8 +7,9 @@
  * @module conveniences
  */
 
-import { Cbor, MajorType, isCborFloat, CborNumber } from './cbor';
+import { Cbor, MajorType, CborNumber } from './cbor';
 import { CborMap } from './map';
+import { isSimpleFloat } from './simple';
 
 // ============================================================================
 // Type Guards
@@ -147,7 +148,7 @@ export function isFloat(cbor: Cbor): boolean {
   if (cbor.type !== MajorType.Simple) {
     return false;
   }
-  return isCborFloat(cbor.value);
+  return isSimpleFloat(cbor.value);
 }
 
 // ============================================================================
@@ -274,7 +275,7 @@ export function asFloat(cbor: Cbor): number | undefined {
   if (cbor.type !== MajorType.Simple) {
     return undefined;
   }
-  if (isCborFloat(cbor.value)) {
+  if (isSimpleFloat(cbor.value)) {
     return cbor.value.float;
   }
   return undefined;
@@ -290,7 +291,7 @@ export function asNumber(cbor: Cbor): CborNumber | undefined {
   if (cbor.type === MajorType.Unsigned || cbor.type === MajorType.Negative) {
     return cbor.value;
   }
-  if (cbor.type === MajorType.Simple && isCborFloat(cbor.value)) {
+  if (cbor.type === MajorType.Simple && isSimpleFloat(cbor.value)) {
     return cbor.value.float;
   }
   return undefined;

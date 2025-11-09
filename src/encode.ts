@@ -1,7 +1,8 @@
-import { Cbor, MajorType, CborTaggedType, CborArrayType, isCborNumber, CborNumber, isCbor, isCborFloat, CborMapType } from "./cbor";
+import { Cbor, MajorType, CborTaggedType, CborArrayType, isCborNumber, CborNumber, isCbor, CborMapType } from "./cbor";
 import { bytesToHex, concatBytes } from "./data-utils";
 import { hasFractionalPart, numberToBinary } from "./float";
 import { CborMap } from "./map";
+import { SimpleValue, isSimpleValue, isSimpleFloat } from "./simple";
 import { encodeBitPattern, encodeVarInt } from "./varint";
 
 export interface ToCbor {
@@ -98,10 +99,15 @@ export function cborData(value: any): Uint8Array {
       }
       break;
     } case MajorType.Simple: {
-      if (isCborNumber(c.value)) {
+      if (isSimpleValue(c.value)) {
+        // Simple enum values (False, True, Null) are already the correct values
         return encodeVarInt(MajorType.Simple, c.value);
-      } else if (isCborFloat(c.value)) {
+      } else if (isSimpleFloat(c.value)) {
+        // Float values are encoded using floating point encoding
         return encodeBitPattern(MajorType.Simple, numberToBinary(c.value.float));
+      } else if (typeof c.value === 'number') {
+        // Other simple values stored as raw numbers
+        return encodeVarInt(MajorType.Simple, c.value);
       }
       break;
     } case MajorType.Array: {
@@ -135,7 +141,7 @@ export function taggedCbor(tag: CborNumber, value: any): Cbor {
   };
 }
 
-export function simpleCborValue(value: CborNumber): Cbor {
+export function simpleCborValue(value: number): Cbor {
   return {
     isCbor: true,
     type: MajorType.Simple,

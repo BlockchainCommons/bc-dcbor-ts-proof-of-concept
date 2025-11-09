@@ -1,5 +1,6 @@
-import { Cbor, MajorType, isCborFloat } from "./cbor";
+import { Cbor, MajorType } from "./cbor";
 import { bytesToHex } from "./data-utils";
+import { SimpleValue, isSimpleFloat } from "./simple";
 
 export function cborDebug(cbor: Cbor): string {
   switch (cbor.type) {
@@ -19,14 +20,14 @@ export function cborDebug(cbor: Cbor): string {
       return `tagged(${cbor.tag}, ${cborDebug(cbor.value)})`;
     case MajorType.Simple:
       const value = cbor.value;
-      if (value == Cbor.true.value) {
+      if (value === SimpleValue.True) {
         return `simple(true)`;
-      } else if (value == Cbor.false.value) {
+      } else if (value === SimpleValue.False) {
         return `simple(false)`;
-      } else if (value == Cbor.null.value) {
+      } else if (value === SimpleValue.Null) {
         return `simple(null)`;
       } else {
-        if (isCborFloat(cbor.value)) {
+        if (isSimpleFloat(cbor.value)) {
           return `simple(${cbor.value.float})`;
         } else {
           return `simple(${cbor.value})`;
@@ -52,15 +53,15 @@ export function cborDiagnostic(cbor: Cbor): string {
     case MajorType.Tagged:
       return `${cbor.tag}(${cborDiagnostic(cbor.value)})`;
     case MajorType.Simple:
-      const value = cbor.value;
-      if (value == Cbor.true.value) {
+      const value2 = cbor.value;
+      if (value2 === SimpleValue.True) {
         return `true`;
-      } else if (value == Cbor.false.value) {
+      } else if (value2 === SimpleValue.False) {
         return `false`;
-      } else if (value == Cbor.null.value) {
+      } else if (value2 === SimpleValue.Null) {
         return `null`;
       } else {
-        if (isCborFloat(cbor.value)) {
+        if (isSimpleFloat(cbor.value)) {
           return `${cbor.value.float}`;
         } else {
           return `simple(${cbor.value})`;

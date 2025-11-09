@@ -1,4 +1,5 @@
 import { CborMap } from "./map";
+import { Simple, SimpleValue } from "./simple";
 
 export enum MajorType {
   Unsigned = 0,
@@ -12,7 +13,6 @@ export enum MajorType {
 }
 
 export type CborNumber = number | bigint;
-export type CborFloat = { float: number };
 
 export function isCborNumber(value: any): value is CborNumber {
   return typeof value === 'number' || typeof value === 'bigint';
@@ -22,10 +22,6 @@ export function isCbor(value: any): boolean {
   return value && typeof value === 'object' && 'isCbor' in value && value.isCbor === true;
 }
 
-export function isCborFloat(value: any): value is CborFloat {
-  return value && typeof value === 'object' && 'float' in value && typeof value.float === 'number';
-}
-
 export type CborUnsignedType = { isCbor: true, type: MajorType.Unsigned, value: CborNumber };
 export type CborNegativeType = { isCbor: true, type: MajorType.Negative, value: CborNumber };
 export type CborByteStringType = { isCbor: true, type: MajorType.ByteString, value: Uint8Array };
@@ -33,18 +29,88 @@ export type CborTextType = { isCbor: true, type: MajorType.Text, value: string }
 export type CborArrayType = { isCbor: true, type: MajorType.Array, value: Cbor[] };
 export type CborMapType = { isCbor: true, type: MajorType.Map, value: CborMap };
 export type CborTaggedType = { isCbor: true, type: MajorType.Tagged, tag: CborNumber, value: Cbor };
-export type CborSimpleType = { isCbor: true, type: MajorType.Simple, value: CborNumber | CborFloat };
+export type CborSimpleType = { isCbor: true, type: MajorType.Simple, value: Simple };
 
 export type Cbor = CborUnsignedType |
   CborNegativeType | CborByteStringType | CborTextType |
   CborArrayType | CborMapType | CborTaggedType |
   CborSimpleType;
 
+/**
+ * CBOR constants and helper methods.
+ *
+ * Provides constants for common simple values (false, true, null) and static methods
+ * matching the Rust CBOR API for encoding/decoding.
+ */
 export const Cbor = {
-  // The CBOR symbolic value for `false`.
-  false: { isCbor: true, type: MajorType.Simple, value: 0x14 } as CborSimpleType,
-  // The CBOR symbolic value for `true`.
-  true: { isCbor: true, type: MajorType.Simple, value: 0x15 } as CborSimpleType,
-  // The CBOR symbolic value for `null`.
-  null: { isCbor: true, type: MajorType.Simple, value: 0x16 } as CborSimpleType,
+  // Static CBOR simple values
+  false: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.False },
+  true: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.True },
+  null: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.Null },
+
+  // Rust-style capitalized aliases
+  False: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.False },
+  True: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.True },
+  Null: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.Null },
+
+  // ============================================================================
+  // Decoding Methods (matches Rust CBOR::try_from_*)
+  // ============================================================================
+
+  /**
+   * Decodes binary data into CBOR symbolic representation.
+   *
+   * Matches Rust's `CBOR::try_from_data()` method.
+   *
+   * @param data - The binary data to decode
+   * @returns A CBOR value if decoding was successful
+   * @throws Error if the data is not valid CBOR or violates dCBOR encoding rules
+   */
+  tryFromData(data: Uint8Array): Cbor {
+    const { decodeCbor } = require('./decode');
+    return decodeCbor(data);
+  },
+
+  /**
+   * Decodes a hexadecimal string into CBOR symbolic representation.
+   *
+   * Matches Rust's `CBOR::try_from_hex()` method.
+   *
+   * @param hex - A string containing hexadecimal characters
+   * @returns A CBOR value if decoding was successful
+   * @throws Error if the hex string is invalid or the resulting data is not valid dCBOR
+   */
+  tryFromHex(hex: string): Cbor {
+    const { hexToBytes } = require('./data-utils');
+    const data = hexToBytes(hex);
+    return this.tryFromData(data);
+  },
+
+  // ============================================================================
+  // Encoding Methods (matches Rust CBOR::to_cbor_data)
+  // ============================================================================
+
+  /**
+   * Encodes a CBOR value to binary data following dCBOR encoding rules.
+   *
+   * Matches Rust's `CBOR::to_cbor_data()` method.
+   *
+   * @param cbor - The CBOR value to encode
+   * @returns A Uint8Array containing the encoded CBOR data
+   */
+  toCborData(cbor: Cbor): Uint8Array {
+    const { cborData } = require('./encode');
+    return cborData(cbor);
+  },
+
+  /**
+   * Encodes a CBOR value to a hexadecimal string.
+   *
+   * @param cbor - The CBOR value to encode
+   * @returns A hexadecimal string representation
+   */
+  toHex(cbor: Cbor): string {
+    const { bytesToHex } = require('./data-utils');
+    return bytesToHex(this.toCborData(cbor));
+  },
 };

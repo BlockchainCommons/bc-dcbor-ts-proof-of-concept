@@ -10,7 +10,8 @@
  * @module diag
  */
 
-import { Cbor, MajorType, isCborFloat } from './cbor';
+import { Cbor, MajorType } from './cbor';
+import { isSimpleFloat } from './simple';
 import { bytesToHex } from './data-utils';
 import { TagsStore, getGlobalTagsStore } from './tags-store';
 import { Tag } from './tag';
@@ -347,7 +348,7 @@ function formatSimple(value: any): string {
     return 'null';
   } else if (value === undefined) {
     return 'undefined';
-  } else if (isCborFloat(value)) {
+  } else if (isSimpleFloat(value)) {
     return formatFloat(value.float);
   } else {
     return `simple(${value})`;
