@@ -42,12 +42,27 @@ export class CborMap {
     return value.value.value as V;
   }
 
-  delete<K>(key: K): void {
+  delete<K>(key: K): boolean {
     let keyData = this.makeKey(key);
+    const existed = this.dict.has(keyData);
     this.dict.delete(keyData);
+    return existed;
+  }
+
+  has<K>(key: K): boolean {
+    let keyData = this.makeKey(key);
+    return this.dict.has(keyData);
+  }
+
+  clear(): void {
+    this.dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
   }
 
   get length(): number {
+    return this.dict.length;
+  }
+
+  get size(): number {
     return this.dict.length;
   }
 
@@ -87,6 +102,12 @@ export class CborMap {
 
   private static entryDiagnostic(entry: MapEntry): string {
     return `${cborDiagnostic(entry.key)}: ${cborDiagnostic(entry.value)}`;
+  }
+
+  *[Symbol.iterator](): Iterator<[Cbor, Cbor]> {
+    for (const entry of this.entries) {
+      yield [entry.key, entry.value];
+    }
   }
 
   toMap<K, V>(): Map<K, V> {
