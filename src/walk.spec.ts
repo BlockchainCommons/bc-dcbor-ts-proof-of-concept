@@ -15,7 +15,10 @@ import {
   maxDepth,
   EdgeType,
   WalkElement,
-  EdgeTypeVariant
+  EdgeTypeVariant,
+  asSingle,
+  asKeyValue,
+  edgeLabel
 } from './walk';
 
 describe('Walk Module Tests', () => {
@@ -675,6 +678,128 @@ describe('Walk Module Tests', () => {
 
       const count = countElements(outer);
       expect(count).toBe(3); // outer tag + inner tag + value
+    });
+  });
+
+  describe('Helper Functions', () => {
+    describe('asSingle', () => {
+      test('extracts CBOR from single element', () => {
+        const element: WalkElement = {
+          type: 'single',
+          cbor: cbor(42)
+        };
+        const result = asSingle(element);
+        expect(result).toBeDefined();
+        expect(result?.type).toBe(MajorType.Unsigned);
+        expect((result as any)?.value).toBe(42);
+      });
+
+      test('returns undefined for keyvalue element', () => {
+        const element: WalkElement = {
+          type: 'keyvalue',
+          key: cbor('key'),
+          value: cbor('value')
+        };
+        const result = asSingle(element);
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe('asKeyValue', () => {
+      test('extracts key-value pair from keyvalue element', () => {
+        const keyVal = cbor('mykey');
+        const valueVal = cbor(123);
+        const element: WalkElement = {
+          type: 'keyvalue',
+          key: keyVal,
+          value: valueVal
+        };
+        const result = asKeyValue(element);
+        expect(result).toBeDefined();
+        expect(result![0]).toBe(keyVal);
+        expect(result![1]).toBe(valueVal);
+      });
+
+      test('returns undefined for single element', () => {
+        const element: WalkElement = {
+          type: 'single',
+          cbor: cbor(42)
+        };
+        const result = asKeyValue(element);
+        expect(result).toBeUndefined();
+      });
+    });
+
+    describe('edgeLabel', () => {
+      test('returns undefined for None edge', () => {
+        const edge: EdgeTypeVariant = { type: EdgeType.None };
+        expect(edgeLabel(edge)).toBeUndefined();
+      });
+
+      test('returns "arr[index]" for ArrayElement edge', () => {
+        const edge: EdgeTypeVariant = { type: EdgeType.ArrayElement, index: 5 };
+        expect(edgeLabel(edge)).toBe('arr[5]');
+      });
+
+      test('returns "kv" for MapKeyValue edge', () => {
+        const edge: EdgeTypeVariant = { type: EdgeType.MapKeyValue };
+        expect(edgeLabel(edge)).toBe('kv');
+      });
+
+      test('returns "key" for MapKey edge', () => {
+        const edge: EdgeTypeVariant = { type: EdgeType.MapKey };
+        expect(edgeLabel(edge)).toBe('key');
+      });
+
+      test('returns "val" for MapValue edge', () => {
+        const edge: EdgeTypeVariant = { type: EdgeType.MapValue };
+        expect(edgeLabel(edge)).toBe('val');
+      });
+
+      test('returns "content" for TaggedContent edge', () => {
+        const edge: EdgeTypeVariant = { type: EdgeType.TaggedContent };
+        expect(edgeLabel(edge)).toBe('content');
+      });
+    });
+
+    describe('Integration with walk', () => {
+      test('asSingle and asKeyValue work in visitor', () => {
+        const map = new CborMap();
+        map.set(cbor('name'), cbor('Alice'));
+        map.set(cbor('age'), cbor(30));
+        const data = cbor(map);
+
+        let kvPairs = 0;
+        let singles = 0;
+
+        walk(data, null, (element) => {
+          if (asSingle(element)) {
+            singles++;
+          }
+          if (asKeyValue(element)) {
+            kvPairs++;
+          }
+          return [null, false];
+        });
+
+        expect(kvPairs).toBe(2); // Two key-value pairs
+        expect(singles).toBeGreaterThan(0); // Map itself, keys, and values
+      });
+
+      test('edgeLabel works with walk edges', () => {
+        const data = cbor([1, 2, 3]);
+        const labels: (string | undefined)[] = [];
+
+        walk(data, null, (element, level, edge) => {
+          labels.push(edgeLabel(edge));
+          return [null, false];
+        });
+
+        expect(labels).toContain(undefined); // Root element (None)
+        expect(labels).toContain('arr[0]');
+        expect(labels).toContain('arr[1]');
+        expect(labels).toContain('arr[2]');
+      });
     });
   });
 });

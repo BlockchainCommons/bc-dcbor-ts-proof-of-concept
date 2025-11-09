@@ -23,7 +23,10 @@ function main() {
   let foundAbort = false;
 
   walk(nestedStructure, undefined, (element: WalkElement, level, edge, _state: void) => {
-    const desc = `L${level}: ${edge.type} - ${diagnosticFlat(element.type === 'single' ? element.cbor : element.key)}`;
+    const edgeStr = edge.type === EdgeType.ArrayElement
+      ? `ArrayElement(${edge.index})`
+      : edge.type;
+    const desc = `L${level}: ${edgeStr} - ${diagnosticFlat(element.type === 'single' ? element.cbor : element.key)}`;
     visitLog.push(desc);
 
     // Check if this is our abort marker
@@ -54,7 +57,7 @@ function main() {
 
   console.log('\nLevel 2 visits from ArrayElement(2):');
   const level2Visits = visitLog.filter(line =>
-    line.startsWith('L2:') && line.includes('array_element')
+    line.startsWith('L2:') && line.includes('ArrayElement(2)')
   );
 
   for (const visit of level2Visits) {

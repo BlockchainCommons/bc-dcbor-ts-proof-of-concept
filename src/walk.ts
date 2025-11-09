@@ -40,12 +40,83 @@ export type EdgeTypeVariant =
   | { type: EdgeType.TaggedContent };
 
 /**
+ * Returns a short text label for the edge type, or undefined if no label is needed.
+ *
+ * This is primarily used for tree formatting to identify relationships between elements.
+ *
+ * @param edge - The edge type variant to get a label for
+ * @returns Short label string, or undefined for None edge type
+ *
+ * @example
+ * ```typescript
+ * edgeLabel({ type: EdgeType.ArrayElement, index: 0 }); // Returns "arr[0]"
+ * edgeLabel({ type: EdgeType.MapKeyValue }); // Returns "kv"
+ * edgeLabel({ type: EdgeType.MapKey }); // Returns "key"
+ * edgeLabel({ type: EdgeType.MapValue }); // Returns "val"
+ * edgeLabel({ type: EdgeType.TaggedContent }); // Returns "content"
+ * edgeLabel({ type: EdgeType.None }); // Returns undefined
+ * ```
+ */
+export function edgeLabel(edge: EdgeTypeVariant): string | undefined {
+  switch (edge.type) {
+    case EdgeType.ArrayElement:
+      return `arr[${edge.index}]`;
+    case EdgeType.MapKeyValue:
+      return 'kv';
+    case EdgeType.MapKey:
+      return 'key';
+    case EdgeType.MapValue:
+      return 'val';
+    case EdgeType.TaggedContent:
+      return 'content';
+    case EdgeType.None:
+      return undefined;
+  }
+}
+
+/**
  * Element visited during tree traversal.
  * Can be either a single CBOR value or a key-value pair from a map.
  */
 export type WalkElement =
   | { type: 'single'; cbor: Cbor }
   | { type: 'keyvalue'; key: Cbor; value: Cbor };
+
+/**
+ * Helper functions for WalkElement
+ */
+
+/**
+ * Returns the single CBOR element if this is a 'single' variant.
+ *
+ * @param element - The walk element to extract from
+ * @returns The CBOR value if single, undefined otherwise
+ *
+ * @example
+ * ```typescript
+ * const element: WalkElement = { type: 'single', cbor: someCbor };
+ * const cbor = asSingle(element); // Returns someCbor
+ * ```
+ */
+export function asSingle(element: WalkElement): Cbor | undefined {
+  return element.type === 'single' ? element.cbor : undefined;
+}
+
+/**
+ * Returns the key-value pair if this is a 'keyvalue' variant.
+ *
+ * @param element - The walk element to extract from
+ * @returns Tuple of [key, value] if keyvalue, undefined otherwise
+ *
+ * @example
+ * ```typescript
+ * const element: WalkElement = { type: 'keyvalue', key: keyValue, value: valValue };
+ * const pair = asKeyValue(element); // Returns [keyValue, valValue]
+ * ```
+ */
+export function asKeyValue(element: WalkElement): [Cbor, Cbor] | undefined {
+  return element.type === 'keyvalue' ? [element.key, element.value] : undefined;
+}
 
 /**
  * Visitor function type with state threading.
