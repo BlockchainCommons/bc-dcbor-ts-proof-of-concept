@@ -98,7 +98,7 @@ describe('CBORTypeError', () => {
   });
 
   test('creates type error with multiple expected types', () => {
-    const expected = [MajorType.Text, MajorType.Bytes];
+    const expected = [MajorType.Text, MajorType.ByteString];
     const error = new CBORTypeError('Type mismatch', expected, MajorType.Array);
     expect(error.expected).toEqual(expected);
     expect(error.actual).toBe(MajorType.Array);
@@ -245,11 +245,11 @@ describe('createTypeError', () => {
 
   test('creates error with multiple expected types', () => {
     const error = createTypeError(
-      [MajorType.Text, MajorType.Bytes],
+      [MajorType.Text, MajorType.ByteString],
       MajorType.Unsigned
     );
     expect(error.message).toContain('text string or byte string');
-    expect(error.expected).toEqual([MajorType.Text, MajorType.Bytes]);
+    expect(error.expected).toEqual([MajorType.Text, MajorType.ByteString]);
   });
 
   test('includes context', () => {

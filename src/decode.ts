@@ -127,14 +127,14 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
       const buf = new Uint8Array(data.buffer, data.byteOffset, varIntLen);
       checkCanonicalEncoding(v, buf);
       return { cbor: { isCbor: true, type: MajorType.Negative, value: v }, len: varIntLen };
-    } case MajorType.Bytes: {
+    } case MajorType.ByteString: {
       const dataLen = value;
       if (typeof dataLen === 'bigint') {
         throw new Error("Value out of range")
       }
       const buf = parseBytes(from(data, varIntLen), dataLen);
       const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-      return { cbor: { isCbor: true, type: MajorType.Bytes, value: bytes }, len: varIntLen + dataLen };
+      return { cbor: { isCbor: true, type: MajorType.ByteString, value: bytes }, len: varIntLen + dataLen };
     } case MajorType.Text: {
       const textLen = value;
       if (typeof textLen === 'bigint') {

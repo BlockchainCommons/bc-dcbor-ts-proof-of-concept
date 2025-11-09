@@ -13,7 +13,7 @@ export {
   MajorType,
   CborUnsignedType,
   CborNegativeType,
-  CborBytesType,
+  CborByteStringType,
   CborTextType,
   CborArrayType,
   CborMapType,

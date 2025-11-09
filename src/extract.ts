@@ -14,7 +14,7 @@ export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
       return c.value;
     case MajorType.Negative:
       return c.value;
-    case MajorType.Bytes:
+    case MajorType.ByteString:
       return c.value;
     case MajorType.Text:
       return c.value;

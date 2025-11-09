@@ -58,7 +58,7 @@ export function isInteger(cbor: Cbor): boolean {
  * @returns True if value is byte string
  */
 export function isBytes(cbor: Cbor): boolean {
-  return cbor.type === MajorType.Bytes;
+  return cbor.type === MajorType.ByteString;
 }
 
 /**
@@ -200,7 +200,7 @@ export function asInteger(cbor: Cbor): number | bigint | undefined {
  * @returns Byte string or undefined
  */
 export function asBytes(cbor: Cbor): Uint8Array | undefined {
-  if (cbor.type === MajorType.Bytes) {
+  if (cbor.type === MajorType.ByteString) {
     return cbor.value;
   }
   return undefined;

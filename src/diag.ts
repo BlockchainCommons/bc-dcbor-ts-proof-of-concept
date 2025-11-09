@@ -203,7 +203,7 @@ function formatDiagnostic(cbor: Cbor, opts: DiagFormatOpts): string {
     case MajorType.Negative:
       return formatNegative(cbor.value);
 
-    case MajorType.Bytes:
+    case MajorType.ByteString:
       return formatBytes(cbor.value);
 
     case MajorType.Text:

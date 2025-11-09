@@ -3,7 +3,7 @@ import { CborMap } from "./map";
 export enum MajorType {
   Unsigned = 0,
   Negative = 1,
-  Bytes = 2,
+  ByteString = 2,
   Text = 3,
   Array = 4,
   Map = 5,
@@ -28,7 +28,7 @@ export function isCborFloat(value: any): value is CborFloat {
 
 export type CborUnsignedType = { isCbor: true, type: MajorType.Unsigned, value: CborNumber };
 export type CborNegativeType = { isCbor: true, type: MajorType.Negative, value: CborNumber };
-export type CborBytesType = { isCbor: true, type: MajorType.Bytes, value: Uint8Array };
+export type CborByteStringType = { isCbor: true, type: MajorType.ByteString, value: Uint8Array };
 export type CborTextType = { isCbor: true, type: MajorType.Text, value: string };
 export type CborArrayType = { isCbor: true, type: MajorType.Array, value: Cbor[] };
 export type CborMapType = { isCbor: true, type: MajorType.Map, value: CborMap };
@@ -36,7 +36,7 @@ export type CborTaggedType = { isCbor: true, type: MajorType.Tagged, tag: CborNu
 export type CborSimpleType = { isCbor: true, type: MajorType.Simple, value: CborNumber | CborFloat };
 
 export type Cbor = CborUnsignedType |
-  CborNegativeType | CborBytesType | CborTextType |
+  CborNegativeType | CborByteStringType | CborTextType |
   CborArrayType | CborMapType | CborTaggedType |
   CborSimpleType;
 

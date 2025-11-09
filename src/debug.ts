@@ -7,7 +7,7 @@ export function cborDebug(cbor: Cbor): string {
       return `unsigned(${cbor.value})`;
     case MajorType.Negative:
       return `negative(${cbor.value})`;
-    case MajorType.Bytes:
+    case MajorType.ByteString:
       return `bytes(${bytesToHex(cbor.value)})`;
     case MajorType.Text:
       return `text("${cbor.value}")`;
@@ -41,7 +41,7 @@ export function cborDiagnostic(cbor: Cbor): string {
       return `${cbor.value}`;
     case MajorType.Negative:
       return `${cbor.value}`;
-    case MajorType.Bytes:
+    case MajorType.ByteString:
       return `h'${bytesToHex(cbor.value)}'`;
     case MajorType.Text:
       return `"${cbor.value}"`;

@@ -41,7 +41,7 @@ export function cbor(value: Cbor | any): Cbor {
   } else if (Array.isArray(value)) {
     return { isCbor: true, type: MajorType.Array, value: value.map(cbor) };
   } else if (value instanceof Uint8Array) {
-    return { isCbor: true, type: MajorType.Bytes, value: value };
+    return { isCbor: true, type: MajorType.ByteString, value: value };
   } else if (value instanceof CborMap) {
     return { isCbor: true, type: MajorType.Map, value: value };
   } else if (value instanceof Map) {
@@ -76,9 +76,9 @@ export function cborData(value: any): Uint8Array {
         return encodeVarInt(MajorType.Negative, -c.value - 1);
       }
       break;
-    } case MajorType.Bytes: {
+    } case MajorType.ByteString: {
       if (c.value instanceof Uint8Array) {
-        const lengthBytes = encodeVarInt(MajorType.Bytes, c.value.length);
+        const lengthBytes = encodeVarInt(MajorType.ByteString, c.value.length);
         return new Uint8Array([...lengthBytes, ...c.value]);
       }
       break;

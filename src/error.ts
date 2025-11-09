@@ -294,7 +294,7 @@ export class CBORKeyError extends CBORError {
  * @example
  * ```typescript
  * throw createTypeError(MajorType.Text, cbor.type);
- * throw createTypeError([MajorType.Text, MajorType.Bytes], cbor.type);
+ * throw createTypeError([MajorType.Text, MajorType.ByteString], cbor.type);
  * ```
  */
 export function createTypeError(
@@ -455,7 +455,7 @@ function majorTypeToString(type: MajorType): string {
       return 'unsigned integer';
     case MajorType.Negative:
       return 'negative integer';
-    case MajorType.Bytes:
+    case MajorType.ByteString:
       return 'byte string';
     case MajorType.Text:
       return 'text string';
