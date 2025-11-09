@@ -14,6 +14,7 @@ import { Cbor, MajorType, isCborFloat } from './cbor';
 import { bytesToHex } from './data-utils';
 import { TagsStore, getGlobalTagsStore } from './tags-store';
 import { Tag } from './tag';
+import type { WalkElement } from './walk';
 
 /**
  * Options for diagnostic formatting.
@@ -151,8 +152,21 @@ export function diagnosticAnnotated(cbor: Cbor): string {
  * // "[[1, 2], [3, 4]]"
  * ```
  */
-export function diagnosticFlat(cbor: Cbor): string {
-  return diagnosticOpt(cbor, { flat: true });
+export function diagnosticFlat(cbor: Cbor): string;
+export function diagnosticFlat(element: WalkElement): string;
+export function diagnosticFlat(input: Cbor | WalkElement): string {
+  // Check if it's a WalkElement by checking for 'type' property
+  if (typeof input === 'object' && input !== null && 'type' in input &&
+      (input.type === 'single' || input.type === 'keyvalue')) {
+    const element = input as WalkElement;
+    if (element.type === 'single') {
+      return diagnosticOpt(element.cbor, { flat: true });
+    } else {
+      return `${diagnosticOpt(element.key, { flat: true })}: ${diagnosticOpt(element.value, { flat: true })}`;
+    }
+  }
+  // Otherwise treat as Cbor
+  return diagnosticOpt(input as Cbor, { flat: true });
 }
 
 /**
