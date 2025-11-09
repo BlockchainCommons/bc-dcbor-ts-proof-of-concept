@@ -20,7 +20,7 @@ import { decodeCbor } from './decode';
  * Extract native JavaScript value from CBOR.
  * Converts CBOR types to their JavaScript equivalents.
  */
-export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
+export function extractCbor(cbor: Cbor | Uint8Array): unknown {
   let c: Cbor;
   if (cbor instanceof Uint8Array) {
     c = decodeCbor(cbor);

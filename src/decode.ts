@@ -198,7 +198,7 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
   }
 }
 
-function checkCanonicalEncoding(cbor: Cbor | any, buf: Uint8Array) {
+function checkCanonicalEncoding(cbor: Cbor | CborNumber, buf: Uint8Array) {
   // If it's already a CBOR object, encode it directly
   // Otherwise treat it as a native value (for floats, etc.)
   const buf2 = isCbor(cbor) ? cborData(cbor) : encodeCbor(cbor);

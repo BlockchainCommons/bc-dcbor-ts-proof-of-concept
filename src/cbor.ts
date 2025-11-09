@@ -23,12 +23,29 @@ export enum MajorType {
 
 export type CborNumber = number | bigint;
 
-export function isCborNumber(value: any): value is CborNumber {
+/**
+ * Type for values that can be converted to CBOR.
+ * Matches Rust's From<T> trait implementations for CBOR.
+ */
+export type CborEncodable =
+  | Cbor
+  | CborNumber
+  | string
+  | boolean
+  | null
+  | undefined
+  | Uint8Array
+  | CborMap
+  | CborEncodable[]
+  | Map<unknown, unknown>
+  | { [key: string]: unknown };
+
+export function isCborNumber(value: unknown): value is CborNumber {
   return typeof value === 'number' || typeof value === 'bigint';
 }
 
-export function isCbor(value: any): boolean {
-  return value && typeof value === 'object' && 'isCbor' in value && value.isCbor === true;
+export function isCbor(value: unknown): value is Cbor {
+  return value !== null && typeof value === 'object' && 'isCbor' in value && value.isCbor === true;
 }
 
 export type CborUnsignedType = { isCbor: true, type: MajorType.Unsigned, value: CborNumber };
@@ -51,6 +68,7 @@ export type Cbor = CborUnsignedType |
  * Provides constants for common simple values (False, True, Null) and static methods
  * matching the Rust CBOR API for encoding/decoding.
  */
+// eslint-disable-next-line no-redeclare
 export const Cbor = {
   // Static CBOR simple values (matching Rust naming)
   False: { isCbor: true as const, type: MajorType.Simple as const, value: { type: 'False' as const } },
@@ -69,7 +87,7 @@ export const Cbor = {
    * @param value - Any JavaScript value (number, string, boolean, null, array, object, etc.)
    * @returns A CBOR symbolic representation
    */
-  from(value: any): Cbor {
+  from(value: CborEncodable): Cbor {
     return cbor(value);
   },
 
@@ -194,7 +212,7 @@ export interface ToCbor {
  * Convert any value to a CBOR representation.
  * Matches Rust's `From` trait implementations for CBOR.
  */
-export function cbor(value: Cbor | any): Cbor {
+export function cbor(value: CborEncodable): Cbor {
   if (isCbor(value)) {
     return value;
   }
@@ -245,10 +263,11 @@ export function cbor(value: Cbor | any): Cbor {
   } else if ('toCbor' in value && typeof value.toCbor === 'function') {
     return value.toCbor();
   } else if (typeof value === 'object' && value !== null && 'tag' in value && 'value' in value) {
-    // Handle plain tagged value format: { tag: number, value: any }
+    // Handle plain tagged value format: { tag: number, value: unknown }
     const keys = Object.keys(value);
+    const objValue = value as { tag: unknown; value: unknown; [key: string]: unknown };
     if (keys.length === 2 && keys.includes('tag') && keys.includes('value')) {
-      return taggedCbor((value as any).tag, (value as any).value);
+      return taggedCbor(objValue.tag, objValue.value);
     }
     // Not a tagged value, fall through to map handling
     const map = new CborMap();
@@ -268,7 +287,7 @@ export function cbor(value: Cbor | any): Cbor {
   throw new Error("Not supported");
 }
 
-export function cborHex(value: any): string {
+export function cborHex(value: CborEncodable): string {
   return bytesToHex(cborData(value));
 }
 
@@ -276,7 +295,7 @@ export function cborHex(value: any): string {
  * Encode a CBOR value to binary data.
  * Matches Rust's `CBOR::to_cbor_data()` method.
  */
-export function cborData(value: any): Uint8Array {
+export function cborData(value: CborEncodable): Uint8Array {
   const c = cbor(value);
   switch (c.type) {
     case MajorType.Unsigned: {
@@ -322,8 +341,8 @@ export function cborData(value: any): Uint8Array {
       return new Uint8Array([...lengthBytes, ...flatArrayBytes]);
     }
     case MajorType.Map: {
-      let map = c as CborMapType;
-      let entries = map.value.entries;
+      const map = c as CborMapType;
+      const entries = map.value.entries;
       const arrayBytes = entries.map(({key, value}) => concatBytes([cborData(key), cborData(value)]));
       const flatArrayBytes = concatBytes(arrayBytes);
       const lengthBytes = encodeVarInt(entries.length, MajorType.Map);
@@ -333,11 +352,11 @@ export function cborData(value: any): Uint8Array {
   throw new Error("Invalid CBOR");
 }
 
-export function encodeCbor(value: any): Uint8Array {
+export function encodeCbor(value: CborEncodable): Uint8Array {
   return cborData(cbor(value));
 }
 
-export function taggedCbor(tag: CborNumber, value: any): Cbor {
+export function taggedCbor(tag: CborNumber | unknown, value: CborEncodable): Cbor {
   return {
     isCbor: true,
     type: MajorType.Tagged,
@@ -356,6 +375,7 @@ export function taggedCbor(tag: CborNumber, value: any): Cbor {
  * These provide utilities for creating, checking, and extracting CBOR types.
  * Corresponds to Rust's conveniences.rs impl blocks.
  */
+// eslint-disable-next-line @typescript-eslint/no-namespace
 export namespace CborConvenience {
   // Byte String conveniences
 
@@ -396,7 +416,7 @@ export namespace CborConvenience {
 
   // Tagged Value conveniences
 
-  export function toTaggedValue(tag: CborNumber | Tag, item: any): Cbor {
+  export function toTaggedValue(tag: CborNumber | Tag, item: CborEncodable): Cbor {
     const tagValue = typeof tag === 'object' && 'value' in tag ? tag.value : tag;
     return {
       isCbor: true,

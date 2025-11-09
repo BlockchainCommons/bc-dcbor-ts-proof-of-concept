@@ -20,7 +20,6 @@ import {
   extractTaggedContent
 } from './cbor-tagged';
 import { extractCbor } from './conveniences';
-import { bytesToHex } from './dump';
 
 /**
  * CBOR Set type with tag(258) encoding.

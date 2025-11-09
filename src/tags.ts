@@ -298,7 +298,7 @@ export function registerTagsIn(tagsStore: TagsStore): void {
     (untaggedCbor: Cbor, _flat: boolean): string => {
       try {
         return CborDate.fromUntaggedCbor(untaggedCbor).toString();
-      } catch (_e) {
+      } catch {
         return String(untaggedCbor);
       }
     }

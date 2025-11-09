@@ -179,7 +179,7 @@ export class CborMap {
    * Keys are sorted in lexicographic order of their encoded CBOR bytes.
    */
   get entries(): MapEntry[] {
-    return this.dict.map((value, key) => ({ key: value.key, value: value.value }));
+    return this.dict.map((value, _key) => ({ key: value.key, value: value.value }));
   }
 
   /**
@@ -234,25 +234,29 @@ export class CborMap {
     switch (cbor.type) {
       case 0: // Unsigned
         return `unsigned(${cbor.value})`;
-      case 1: // Negative
+      case 1: { // Negative
         const negValue = typeof cbor.value === 'bigint'
           ? -(cbor.value as bigint) - 1n
           : -(cbor.value as number) - 1;
         return `negative(${negValue})`;
-      case 2: // ByteString
+      }
+      case 2: { // ByteString
         const bytes = cbor.value as Uint8Array;
         return `bytes(${bytesToHex(bytes)})`;
+      }
       case 3: // Text
         return `text("${cbor.value}")`;
-      case 4: // Array
+      case 4: { // Array
         const items = (cbor.value as Cbor[]).map(CborMap.formatDebug);
         return `array([${items.join(', ')}])`;
-      case 5: // Map
+      }
+      case 5: { // Map
         const map = cbor.value as CborMap;
         return map.debug;
+      }
       case 6: // Tagged
         return `tagged(${cbor.tag}, ${CborMap.formatDebug(cbor.value as Cbor)})`;
-      case 7: // Simple
+      case 7: { // Simple
         const simple = cbor.value;
         if (typeof simple === 'object' && simple !== null && 'type' in simple) {
           switch (simple.type) {
@@ -267,8 +271,10 @@ export class CborMap {
           }
         }
         return 'simple';
+      }
+      default:
+        return diagnostic(cbor);
     }
-    return diagnostic(cbor);
   }
 
   private static entryDiagnostic(entry: MapEntry): string {
@@ -283,7 +289,7 @@ export class CborMap {
 
   toMap<K, V>(): Map<K, V> {
     const map = new Map<K, V>();
-    for (let entry of this.entries) {
+    for (const entry of this.entries) {
       map.set(extractCbor(entry.key) as K, extractCbor(entry.value) as V);
     }
     return map;

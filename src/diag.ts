@@ -153,10 +153,10 @@ export function diagnosticAnnotated(cbor: Cbor): string {
  * // "[[1, 2], [3, 4]]"
  * ```
  */
-// eslint-disable-next-line no-redeclare
 export function diagnosticFlat(cbor: Cbor): string;
 // eslint-disable-next-line no-redeclare
 export function diagnosticFlat(element: WalkElement): string;
+// eslint-disable-next-line no-redeclare
 export function diagnosticFlat(input: Cbor | WalkElement): string {
   // Check if it's a WalkElement by checking for 'type' property
   if (typeof input === 'object' && input !== null && 'type' in input &&
@@ -316,7 +316,7 @@ function containsComplexStructure(items: Cbor[]): boolean {
 /**
  * Format map.
  */
-function formatMap(map: any, opts: DiagFormatOpts): string {
+function formatMap(map: CborMap, opts: DiagFormatOpts): string {
   // Extract entries from CborMap or use empty array
   const entries = (map && map.entries) ? map.entries : [];
 
@@ -324,18 +324,23 @@ function formatMap(map: any, opts: DiagFormatOpts): string {
     return '{}';
   }
 
+  interface FormattedPair {
+    key: string;
+    value: string;
+  }
+
   // Format each key-value pair
-  const formattedPairs = entries.map((entry: any) => ({
+  const formattedPairs: FormattedPair[] = entries.map((entry: { key: Cbor; value: Cbor }) => ({
     key: formatDiagnostic(entry.key, opts),
     value: formatDiagnostic(entry.value, opts)
   }));
 
   // Decide between single-line and multi-line based on complexity
-  const totalLength = formattedPairs.reduce((sum: number, pair: any) =>
+  const totalLength = formattedPairs.reduce((sum: number, pair: FormattedPair) =>
     sum + pair.key.length + pair.value.length + 2, 0); // +2 for ": "
 
   const shouldUseMultiLine = !opts.flat && (
-    entries.some((e: any) =>
+    entries.some((e: { key: Cbor; value: Cbor }) =>
       e.key.type === MajorType.Array ||
       e.key.type === MajorType.Map ||
       e.value.type === MajorType.Array ||
@@ -351,14 +356,14 @@ function formatMap(map: any, opts: DiagFormatOpts): string {
     const indentStr = (opts.indentString || '    ').repeat(indent);
     const itemIndentStr = (opts.indentString || '    ').repeat(indent + 1);
 
-    const formattedEntries = formattedPairs.map((pair: any) => {
+    const formattedEntries = formattedPairs.map((pair: FormattedPair) => {
       return `${itemIndentStr}${pair.key}:\n${itemIndentStr}${pair.value}`;
     });
 
     return `{\n${formattedEntries.join(',\n')}\n${indentStr}}`;
   } else {
     // Single-line formatting
-    const pairs = formattedPairs.map((pair: any) => `${pair.key}: ${pair.value}`);
+    const pairs = formattedPairs.map((pair: FormattedPair) => `${pair.key}: ${pair.value}`);
     return `{${pairs.join(', ')}}`;
   }
 }

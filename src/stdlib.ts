@@ -16,7 +16,9 @@
  */
 export function isNode(): boolean {
   return typeof process !== 'undefined' &&
+         // eslint-disable-next-line no-undef
          process.versions != null &&
+         // eslint-disable-next-line no-undef
          process.versions.node != null;
 }
 
@@ -24,6 +26,7 @@ export function isNode(): boolean {
  * Check if running in browser environment.
  */
 export function isBrowser(): boolean {
+  // eslint-disable-next-line no-undef
   return typeof window !== 'undefined' && typeof window.document !== 'undefined';
 }
 
