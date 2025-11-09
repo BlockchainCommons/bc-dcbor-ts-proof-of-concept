@@ -25,7 +25,7 @@
  */
 
 import { SortedMap } from 'collections/sorted-map';
-import { Cbor } from './cbor';
+import { Cbor, CborEncodable } from './cbor';
 import { cbor, cborData, encodeCbor } from './cbor';
 import { areBytesEqual, lexicographicallyCompareBytes } from './stdlib';
 import { bytesToHex } from './dump';
@@ -48,12 +48,12 @@ export class CborMap {
    * Creates a new, empty CBOR Map.
    * Optionally initializes from a JavaScript Map.
    */
-  constructor(map?: Map<any, any>) {
+  constructor(map?: Map<unknown, unknown>) {
     this.dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
 
     if (map !== undefined) {
       for (const [key, value] of map.entries()) {
-        this.set(key, value);
+        this.set(key as CborEncodable, value as CborEncodable);
       }
     }
   }
@@ -70,7 +70,7 @@ export class CborMap {
    * Inserts a key-value pair into the map.
    * Matches Rust's Map::insert().
    */
-  set<K, V>(key: K, value: V): void {
+  set<K extends CborEncodable, V extends CborEncodable>(key: K, value: V): void {
     const keyCbor = cbor(key);
     const valueCbor = cbor(value);
     const keyData = cborData(keyCbor);
@@ -80,11 +80,11 @@ export class CborMap {
   /**
    * Alias for set() to match Rust's insert() method.
    */
-  insert<K, V>(key: K, value: V): void {
+  insert<K extends CborEncodable, V extends CborEncodable>(key: K, value: V): void {
     this.set(key, value);
   }
 
-  private makeKey<K>(key: K): MapKey {
+  private makeKey<K extends CborEncodable>(key: K): MapKey {
     const keyCbor = cbor(key);
     return cborData(keyCbor);
   }
@@ -94,7 +94,7 @@ export class CborMap {
    * Returns undefined if the key is not present in the map.
    * Matches Rust's Map::get().
    */
-  get<K, V>(key: K): V | undefined {
+  get<K extends CborEncodable, V>(key: K): V | undefined {
     const keyData = this.makeKey(key);
     const value = this.dict.get(keyData);
     if (value === undefined) {
@@ -109,7 +109,7 @@ export class CborMap {
    * Throws an error if the key is not present.
    * Matches Rust's Map::extract().
    */
-  extract<K, V>(key: K): V {
+  extract<K extends CborEncodable, V>(key: K): V {
     const value = this.get<K, V>(key);
     if (value === undefined) {
       throw new Error('MissingMapKey');
@@ -121,19 +121,19 @@ export class CborMap {
    * Tests if the map contains a key.
    * Matches Rust's Map::contains_key().
    */
-  containsKey<K>(key: K): boolean {
+  containsKey<K extends CborEncodable>(key: K): boolean {
     const keyData = this.makeKey(key);
     return this.dict.has(keyData);
   }
 
-  delete<K>(key: K): boolean {
+  delete<K extends CborEncodable>(key: K): boolean {
     const keyData = this.makeKey(key);
     const existed = this.dict.has(keyData);
     this.dict.delete(keyData);
     return existed;
   }
 
-  has<K>(key: K): boolean {
+  has<K extends CborEncodable>(key: K): boolean {
     const keyData = this.makeKey(key);
     return this.dict.has(keyData);
   }
@@ -197,7 +197,7 @@ export class CborMap {
    * Throws if the key is not in ascending order or is a duplicate.
    * Matches Rust's Map::insert_next().
    */
-  setNext<K, V>(key: K, value: V): void {
+  setNext<K extends CborEncodable, V extends CborEncodable>(key: K, value: V): void {
     const lastEntry = this.dict.max();
     if (lastEntry === undefined) {
       this.set(key, value);

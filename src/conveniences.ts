@@ -7,7 +7,7 @@
  * @module conveniences
  */
 
-import { Cbor, MajorType, CborNumber } from './cbor';
+import { Cbor, MajorType, CborNumber, CborEncodable } from './cbor';
 import { CborMap } from './map';
 import { isFloat as isSimpleFloat } from './simple';
 import { decodeCbor } from './decode';
@@ -579,7 +579,7 @@ export function arrayIsEmpty(cbor: Cbor): boolean | undefined {
  * @param key - Map key
  * @returns Value for key or undefined
  */
-export function mapValue<K, V>(cbor: Cbor, key: K): V | undefined {
+export function mapValue<K extends CborEncodable, V>(cbor: Cbor, key: K): V | undefined {
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
@@ -594,7 +594,7 @@ export function mapValue<K, V>(cbor: Cbor, key: K): V | undefined {
  * @param key - Map key
  * @returns True if key exists, false otherwise, undefined if not map
  */
-export function mapHas<K>(cbor: Cbor, key: K): boolean | undefined {
+export function mapHas<K extends CborEncodable>(cbor: Cbor, key: K): boolean | undefined {
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }

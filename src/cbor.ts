@@ -258,28 +258,28 @@ export function cbor(value: CborEncodable): Cbor {
     return { isCbor: true, type: MajorType.Map, value: new CborMap(value) };
   } else if (value instanceof Set) {
     return { isCbor: true, type: MajorType.Array, value: Array.from(value).map(cbor) };
-  } else if ('taggedCbor' in value && typeof value.taggedCbor === 'function') {
+  } else if (typeof value === 'object' && value !== null && 'taggedCbor' in value && typeof value.taggedCbor === 'function') {
     return value.taggedCbor();
-  } else if ('toCbor' in value && typeof value.toCbor === 'function') {
+  } else if (typeof value === 'object' && value !== null && 'toCbor' in value && typeof value.toCbor === 'function') {
     return value.toCbor();
   } else if (typeof value === 'object' && value !== null && 'tag' in value && 'value' in value) {
     // Handle plain tagged value format: { tag: number, value: unknown }
     const keys = Object.keys(value);
     const objValue = value as { tag: unknown; value: unknown; [key: string]: unknown };
     if (keys.length === 2 && keys.includes('tag') && keys.includes('value')) {
-      return taggedCbor(objValue.tag, objValue.value);
+      return taggedCbor(objValue.tag, objValue.value as CborEncodable);
     }
     // Not a tagged value, fall through to map handling
     const map = new CborMap();
     for (const [key, val] of Object.entries(value)) {
-      map.set(cbor(key), cbor(val));
+      map.set(cbor(key as CborEncodable), cbor(val as CborEncodable));
     }
     return { isCbor: true, type: MajorType.Map, value: map };
   } else if (typeof value === 'object' && value !== null) {
     // Handle plain objects by converting to CborMap
     const map = new CborMap();
     for (const [key, val] of Object.entries(value)) {
-      map.set(cbor(key), cbor(val));
+      map.set(cbor(key as CborEncodable), cbor(val as CborEncodable));
     }
     return { isCbor: true, type: MajorType.Map, value: map };
   }
@@ -357,10 +357,12 @@ export function encodeCbor(value: CborEncodable): Uint8Array {
 }
 
 export function taggedCbor(tag: CborNumber | unknown, value: CborEncodable): Cbor {
+  // Validate and convert tag to CborNumber
+  const tagNumber: CborNumber = typeof tag === 'number' || typeof tag === 'bigint' ? tag : Number(tag);
   return {
     isCbor: true,
     type: MajorType.Tagged,
-    tag: tag,
+    tag: tagNumber,
     value: cbor(value),
   };
 }

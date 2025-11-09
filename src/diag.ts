@@ -10,9 +10,11 @@
  * @module diag
  */
 
-import { Cbor, MajorType } from './cbor';
+import { Cbor, MajorType, Simple } from './cbor';
 import { bytesToHex } from './dump';
+import { CborMap } from './map';
 import { TagsStore, getGlobalTagsStore } from './tags-store';
+import type { Tag } from './tag';
 import type { WalkElement } from './walk';
 
 /**
@@ -389,7 +391,8 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
   if (opts.annotate) {
     const store = resolveTagsStore(opts.tags);
     if (store) {
-      const assignedName = store.assignedNameForTag({ value: tag } as any);
+      const tagObj: Tag = { value: tag };
+      const assignedName = store.assignedNameForTag(tagObj);
       if (assignedName) {
         comment = assignedName;
       }
@@ -413,33 +416,18 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
 /**
  * Format simple value.
  */
-function formatSimple(value: any): string {
+function formatSimple(value: Simple): string {
   // Handle discriminated union
-  if (typeof value === 'object' && value !== null && 'type' in value) {
-    switch (value.type) {
-      case 'True':
-        return 'true';
-      case 'False':
-        return 'false';
-      case 'Null':
-        return 'null';
-      case 'Float':
-        return formatFloat(value.value);
-    }
+  switch (value.type) {
+    case 'True':
+      return 'true';
+    case 'False':
+      return 'false';
+    case 'Null':
+      return 'null';
+    case 'Float':
+      return formatFloat(value.value);
   }
-
-  // Legacy numeric values fallback
-  if (value === 0x15 || value === 21) {
-    return 'true';
-  } else if (value === 0x14 || value === 20) {
-    return 'false';
-  } else if (value === 0x16 || value === 22) {
-    return 'null';
-  } else if (value === undefined) {
-    return 'undefined';
-  }
-
-  return `simple(${value})`;
 }
 
 /**

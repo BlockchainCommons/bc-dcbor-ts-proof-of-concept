@@ -34,7 +34,7 @@ export function isBrowser(): boolean {
  * Check if running in Deno environment.
  */
 export function isDeno(): boolean {
-  return typeof (globalThis as any).Deno !== 'undefined';
+  return typeof (globalThis as unknown as { Deno?: unknown }).Deno !== 'undefined';
 }
 
 /**

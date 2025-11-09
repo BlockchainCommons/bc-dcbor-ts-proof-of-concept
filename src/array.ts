@@ -6,7 +6,7 @@
  * @module array
  */
 
-import { Cbor, MajorType, cborData } from './cbor';
+import { Cbor, MajorType, CborEncodable, cborData } from './cbor';
 import { lexicographicallyCompareBytes } from './stdlib';
 
 /**
@@ -46,7 +46,7 @@ export function asArray(cbor: Cbor): Cbor[] {
  * // Returns elements sorted by their CBOR encoding
  * ```
  */
-export function sortArrayByCborEncoding<T>(array: T[]): T[] {
+export function sortArrayByCborEncoding<T extends CborEncodable>(array: T[]): T[] {
   const pairs: [Uint8Array, T][] = array.map(item => [cborData(item), item]);
   pairs.sort((a, b) => lexicographicallyCompareBytes(a[0], b[0]));
   return pairs.map(([_, item]) => item);
