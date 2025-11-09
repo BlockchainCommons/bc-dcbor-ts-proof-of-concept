@@ -16,13 +16,13 @@ import {
   diagnostic,
   diagnosticFlat,
   diagnosticAnnotated,
-  diagnosticOpt,
   summary,
   hex,
   hexAnnotated,
   registerTags,
   CborDate
 } from '../src';
+import { getGlobalTagsStore } from '../src/tags-store';
 
 // Helper function to get description (matches Rust's format!("{}", cbor))
 function cborDescription(value: any): string {
@@ -40,21 +40,24 @@ function formatAsDisplay(cborValue: Cbor): string {
   switch (cborValue.type) {
     case 0: // Unsigned
       return String(cborValue.value);
-    case 1: // Negative
+    case 1: { // Negative
       const negValue = typeof cborValue.value === 'bigint'
         ? -(cborValue.value as bigint) - 1n
         : -(cborValue.value as number) - 1;
       return String(negValue);
-    case 2: // ByteString
+    }
+    case 2: { // ByteString
       const bytes = cborValue.value as Uint8Array;
       const hexStr = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
       return `h'${hexStr}'`;
+    }
     case 3: // Text
       return `"${cborValue.value}"`;
-    case 4: // Array
+    case 4: { // Array
       const items = cborValue.value.map((item: any) => formatAsDisplay(item));
       return `[${items.join(', ')}]`;
-    case 5: // Map
+    }
+    case 5: { // Map
       const map = cborValue.value as CborMap;
       if (map && map.entries) {
         const entries = map.entries.map((entry: any) =>
@@ -63,14 +66,15 @@ function formatAsDisplay(cborValue: Cbor): string {
         return `{${entries.join(', ')}}`;
       }
       return '{}';
-    case 6: // Tagged - use tag NAME if available, otherwise number
+    }
+    case 6: { // Tagged - use tag NAME if available, otherwise number
       const tagValue = cborValue.tag;
-      const { getGlobalTagsStore } = require('../src/tags-store');
       const store = getGlobalTagsStore();
       const tagName = store.nameForValue(tagValue); // Returns name or number string
       const content = formatAsDisplay(cborValue.value);
       return `${tagName}(${content})`;
-    case 7: // Simple
+    }
+    case 7: { // Simple
       const simple = cborValue.value;
       if (typeof simple === 'object' && simple !== null && 'type' in simple) {
         switch (simple.type) {
@@ -85,6 +89,7 @@ function formatAsDisplay(cborValue: Cbor): string {
         }
       }
       return String(simple);
+    }
   }
   return String(cborValue);
 }
@@ -106,41 +111,45 @@ function generateDebugDescription(cborValue: any): string {
     case 0: // Unsigned
       return `unsigned(${cborValue.value})`;
 
-    case 1: // Negative
+    case 1: { // Negative
       const negValue = typeof cborValue.value === 'bigint'
         ? -(cborValue.value as bigint) - 1n
         : -(cborValue.value as number) - 1;
       return `negative(${negValue})`;
+    }
 
-    case 2: // ByteString
+    case 2: { // ByteString
       const bytes = cborValue.value as Uint8Array;
       const hexStr = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
       return `bytes(${hexStr})`;
+    }
 
     case 3: // Text
       return `text("${cborValue.value}")`;
 
-    case 4: // Array
+    case 4: { // Array
       const items = cborValue.value.map((item: any) => generateDebugDescription(item));
       return `array([${items.join(', ')}])`;
+    }
 
-    case 5: // Map
-      const map = cborValue.value as any;
+    case 5: { // Map
+      const map = cborValue.value as CborMap;
       if (map && map.debug) {
         return map.debug;
       }
       return 'map({})';
+    }
 
-    case 6: // Tagged
+    case 6: { // Tagged
       const tagValue = cborValue.tag;
       const content = generateDebugDescription(cborValue.value);
       // Look up tag name from the global tag store for debug output
-      const { getGlobalTagsStore } = require('../src/tags-store');
       const store = getGlobalTagsStore();
       const tagName = store.nameForValue(tagValue);
       return `tagged(${tagName}, ${content})`;
+    }
 
-    case 7: // Simple
+    case 7: { // Simple
       const simple = cborValue.value;
       if (typeof simple === 'object' && simple !== null && 'type' in simple) {
         switch (simple.type) {
@@ -155,6 +164,7 @@ function generateDebugDescription(cborValue: any): string {
         }
       }
       return 'simple';
+    }
   }
 
   return String(cborValue);
@@ -167,67 +177,6 @@ function cborDiagnostic(value: any): string {
   return diagnostic(cborValue);
 }
 
-// Generate pretty-printed diagnostic notation
-function diagnosticPretty(cborValue: any, indent = 0): string {
-  if (!cborValue || !cborValue.isCbor) {
-    return String(cborValue);
-  }
-
-  const indentStr = '    '.repeat(indent);
-  const nextIndentStr = '    '.repeat(indent + 1);
-
-  switch (cborValue.type) {
-    case 0: // Unsigned
-      return String(cborValue.value);
-
-    case 1: // Negative
-      const negValue = typeof cborValue.value === 'bigint'
-        ? -(cborValue.value as bigint) - 1n
-        : -(cborValue.value as number) - 1;
-      return String(negValue);
-
-    case 2: // ByteString
-      const bytes = cborValue.value as Uint8Array;
-      const hexStr = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
-      return `h'${hexStr}'`;
-
-    case 3: // Text
-      return `"${cborValue.value}"`;
-
-    case 4: // Array
-      if (cborValue.value.length === 0) {
-        return '[]';
-      }
-      const arrayItems = cborValue.value.map((item: any) =>
-        nextIndentStr + diagnosticPretty(item, indent + 1)
-      );
-      return `[\n${arrayItems.join(',\n')}\n${indentStr}]`;
-
-    case 5: // Map
-      const map = cborValue.value as any;
-      if (map && map.entries && map.entries.length === 0) {
-        return '{}';
-      }
-      if (map && map.entries) {
-        const mapEntries = map.entries.map((entry: any) => {
-          const key = diagnosticPretty(entry.key, indent + 1);
-          const value = diagnosticPretty(entry.value, indent + 1);
-          return `${nextIndentStr}${key}:\n${nextIndentStr}${value}`;
-        });
-        return `{\n${mapEntries.join(',\n')}\n${indentStr}}`;
-      }
-      return '{}';
-
-    case 6: // Tagged
-      const content = diagnosticPretty(cborValue.value, indent);
-      return `${cborValue.tag}(${content})`;
-
-    case 7: // Simple
-      return diagnosticFlat(cborValue);
-  }
-
-  return diagnostic(cborValue);
-}
 
 // Helper function to get annotated diagnostic (matches Rust's cbor.diagnostic_annotated())
 function cborDiagnosticAnnotated(value: any): string {
@@ -701,9 +650,9 @@ describe('format tests', () => {
   });
 
   test('format_structure', () => {
-    const encodedCborHex = 'd83183015829536f6d65206d7973746572696573206172656e2774206d65616e7420746f20626520736f6c7665642e82d902c3820158402b9238e19eafbc154b49ec89edd4e0fb1368e97332c6913b4beb637d1875824f3e43bd7fb0c41fb574f08ce00247413d3ce2d9466e0ccfa4a89b92504982710ad902c3820158400f9c7af36804ffe5313c00115e5a31aa56814abaa77ff301da53d48613496e9c51a98b36d55f6fb5634fdb0123910cfa4904f1c60523df41013dc3749b377900';
+    const _encodedCborHex = 'd83183015829536f6d65206d7973746572696573206172656e2774206d65616e7420746f20626520736f6c7665642e82d902c3820158402b9238e19eafbc154b49ec89edd4e0fb1368e97332c6913b4beb637d1875824f3e43bd7fb0c41fb574f08ce00247413d3ce2d9466e0ccfa4a89b92504982710ad902c3820158400f9c7af36804ffe5313c00115e5a31aa56814abaa77ff301da53d48613496e9c51a98b36d55f6fb5634fdb0123910cfa4904f1c60523df41013dc3749b377900';
     // For this test, we would need to decode from hex first
-    // const cborValue = decodeCbor(hexToBytes(encodedCborHex));
+    // const cborValue = decodeCbor(hexToBytes(_encodedCborHex));
     // For now, skip complex structure test
     // This would require full hex decoding and structure testing
   });

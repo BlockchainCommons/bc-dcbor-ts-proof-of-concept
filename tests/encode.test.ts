@@ -79,9 +79,11 @@ function cborDebug(cborValue: Cbor): string {
             } else {
               return `simple(${f})`;
             }
+          }
         }
       }
       return 'simple';
+    }
   }
   return String(cborValue);
 }

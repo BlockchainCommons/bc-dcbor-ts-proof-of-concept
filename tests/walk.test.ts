@@ -41,7 +41,6 @@ import {
   cbor,
   CborMap,
   walk,
-  EdgeType,
   WalkElement,
   diagnosticFlat
 } from '../src';
