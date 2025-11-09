@@ -24,7 +24,13 @@ export function cbor(value: Cbor | any): Cbor {
     } else if (value == -Infinity) {
       return { isCbor: true, type: MajorType.Simple, value: { float: -Infinity } };
     } else if (value < 0) {
-      return { isCbor: true, type: MajorType.Negative, value: value };
+      // Store the magnitude to encode, matching Rust's representation
+      // For a negative value n, CBOR encodes it as -1-n, so we store -n-1
+      if (typeof value === 'bigint') {
+        return { isCbor: true, type: MajorType.Negative, value: -value - 1n };
+      } else {
+        return { isCbor: true, type: MajorType.Negative, value: -value - 1 };
+      }
     } else {
       return { isCbor: true, type: MajorType.Unsigned, value: value };
     }
@@ -71,11 +77,8 @@ export function cborData(value: any): Uint8Array {
     case MajorType.Unsigned: {
       return encodeVarInt(MajorType.Unsigned, c.value);
     } case MajorType.Negative: {
-      if (typeof c.value === 'bigint') {
-        return encodeVarInt(MajorType.Negative, -c.value - 1n);
-      } else if (typeof c.value === 'number') {
-        return encodeVarInt(MajorType.Negative, -c.value - 1);
-      }
+      // Value is already stored as the magnitude to encode (matching Rust)
+      return encodeVarInt(MajorType.Negative, c.value);
       break;
     } case MajorType.ByteString: {
       if (c.value instanceof Uint8Array) {

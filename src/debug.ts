@@ -7,7 +7,9 @@ export function cborDebug(cbor: Cbor): string {
     case MajorType.Unsigned:
       return `unsigned(${cbor.value})`;
     case MajorType.Negative:
-      return `negative(${cbor.value})`;
+      // Convert stored magnitude to actual negative value for display
+      const actualNegative = typeof cbor.value === 'bigint' ? -cbor.value - 1n : -cbor.value - 1;
+      return `negative(${actualNegative})`;
     case MajorType.ByteString:
       return `bytes(${bytesToHex(cbor.value)})`;
     case MajorType.Text:
@@ -41,7 +43,9 @@ export function cborDiagnostic(cbor: Cbor): string {
     case MajorType.Unsigned:
       return `${cbor.value}`;
     case MajorType.Negative:
-      return `${cbor.value}`;
+      // Convert stored magnitude to actual negative value for display
+      const actualValue = typeof cbor.value === 'bigint' ? -cbor.value - 1n : -cbor.value - 1;
+      return `${actualValue}`;
     case MajorType.ByteString:
       return `h'${bytesToHex(cbor.value)}'`;
     case MajorType.Text:

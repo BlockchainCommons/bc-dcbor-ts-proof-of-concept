@@ -4,6 +4,7 @@ import { decodeCbor } from "./decode";
 import { cbor, cborData, cborHex } from "./encode";
 import { extractCbor } from "./extract";
 import { CborMap } from "./map";
+import { Cbor } from "./cbor";
 
 describe('CborMap', () => {
   test('set and get, encode and decode', () => {
@@ -48,7 +49,8 @@ describe('CborMap', () => {
     const encoded = cborData(mapCbor);
     const decoded = decodeCbor(encoded);
     expect(cborDiagnostic(mapCbor)).toEqual(cborDiagnostic(decoded));
-    expect((extractCbor(decoded) as CborMap).toMap()).toEqual(map);
+    expect((extractCbor(decoded) as Cbor).value as CborMap).toBeDefined();
+    expect(((extractCbor(decoded) as Cbor).value as CborMap).toMap()).toEqual(map);
   });
 
   test('Anders map', () => {

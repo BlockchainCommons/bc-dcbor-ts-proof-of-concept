@@ -122,7 +122,9 @@ describe('CborDate Tests', () => {
 
       expect(untagged.type).toBe(MajorType.Negative);
       if (untagged.type === MajorType.Negative) {
-        expect(untagged.value).toBe(-100);
+        // Value is stored as magnitude (matching Rust representation)
+        // For -100, the magnitude to encode is 99 (because -1-99 = -100)
+        expect(untagged.value).toBe(99);
       }
     });
 

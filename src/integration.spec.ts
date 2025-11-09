@@ -41,11 +41,11 @@ describe('Complex Nested Structures', () => {
     const decoded = decodeCbor(encoded);
     const extracted = extractCbor(decoded);
 
-    // Extract to plain object using toMap()
-    expect(extracted).toBeInstanceOf(CborMap);
-    const map = extracted as CborMap;
+    // extractCbor on a map returns the Cbor object, access .value for CborMap
+    expect(extracted).toHaveProperty('type', MajorType.Map);
+    const map = (extracted as Cbor).value as CborMap;
     expect(map.get<string, any[]>('users')).toBeDefined();
-    expect(map.get<string, CborMap>('metadata')).toBeDefined();
+    expect(map.get<string, Cbor>('metadata')).toBeDefined();
   });
 
   test('mixed types in array', () => {
@@ -548,14 +548,15 @@ describe('Large Data Handling', () => {
     const decoded = decodeCbor(encoded);
     const extracted = extractCbor(decoded);
 
-    // After extraction, maps become CborMap objects
+    // After extraction, maps return Cbor objects, access .value for CborMap
     let current: any = extracted;
     for (let i = 9; i >= 0; i--) {
-      if (current instanceof CborMap) {
-        expect(current.get<string, number>('level')).toBe(i);
-        current = current.get<string, any>('child');
+      if (current && typeof current === 'object' && 'type' in current && current.type === MajorType.Map) {
+        const map = current.value as CborMap;
+        expect(map.get<string, number>('level')).toBe(i);
+        current = map.get<string, any>('child');
       } else {
-        throw new Error(`Expected CborMap at level ${i}`);
+        throw new Error(`Expected Cbor Map at level ${i}`);
       }
     }
     expect(current).toBe('leaf');

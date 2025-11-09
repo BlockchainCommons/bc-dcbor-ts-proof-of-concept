@@ -1,6 +1,6 @@
-import { Cbor, CborNumber, MajorType } from "./cbor";
+import { Cbor, CborNumber, MajorType, isCbor } from "./cbor";
 import { areBytesEqual } from "./data-utils";
-import { encodeCbor } from "./encode";
+import { encodeCbor, cborData } from "./encode";
 import { binary16ToNumber, binary32ToNumber, binary64ToNumber } from "./float";
 import { CborMap } from "./map";
 
@@ -43,7 +43,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
     throw new Error("Underrun");
   }
 
-  const { majorType, headerValue } = parseHeader(at(data, 0));
+  const header = at(data, 0);
+  const { majorType, headerValue } = parseHeader(header);
   const dataRemaining = data.byteLength - 1;
   let value: CborNumber;
   let varIntLen: number;
@@ -64,7 +65,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
       throw new Error("Underrun");
     }
     value = (at(data, 1) << 8 | at(data, 2)) >>> 0;
-    if (value <= 0xFF) {
+    // Floats with header 0xf9 are allowed to have values <= 0xFF
+    if (value <= 0xFF && header !== 0xf9) {
       throw new Error("Non-canonical numeric");
     }
     varIntLen = 3;
@@ -73,7 +75,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
       throw new Error("Underrun");
     }
     value = (at(data, 1) << 24 | at(data, 2) << 16 | at(data, 3) << 8 | at(data, 4)) >>> 0;
-    if (value <= 0xFFFF) {
+    // Floats with header 0xfa are allowed to have values <= 0xFFFF
+    if (value <= 0xFFFF && header !== 0xfa) {
       throw new Error("Non-canonical numeric");
     }
     varIntLen = 5;
@@ -93,7 +96,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
     if (value <= Number.MAX_SAFE_INTEGER) {
       value = Number(value);
     }
-    if (value <= 0xFFFFFFFF) {
+    // Floats with header 0xfb are allowed to have values <= 0xFFFFFFFF
+    if (value <= 0xFFFFFFFF && header !== 0xfb) {
       throw new Error("Non-canonical numeric");
     }
     varIntLen = 9;
@@ -110,23 +114,17 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
   const { majorType, value, varIntLen } = parseHeaderVarint(data);
   switch (majorType) {
     case MajorType.Unsigned: {
+      const cbor: Cbor = { isCbor: true, type: MajorType.Unsigned, value: value };
       const buf = new Uint8Array(data.buffer, data.byteOffset, varIntLen);
-      checkCanonicalEncoding(value, buf);
-      return { cbor: { isCbor: true, type: MajorType.Unsigned, value: value }, len: varIntLen };
+      checkCanonicalEncoding(cbor, buf);
+      return { cbor, len: varIntLen };
     } case MajorType.Negative: {
-      let v: CborNumber;
-      if (typeof value === 'bigint') {
-        if (value == 18446744073709551615n) {
-          v = -9223372036854775808n;
-        } else {
-          v = -value - 1n;
-        }
-      } else {
-        v = -value - 1;
-      }
+      // Store the magnitude as-is, matching Rust's representation
+      // The decoded value is what gets encoded (not the actual negative number)
+      const cbor: Cbor = { isCbor: true, type: MajorType.Negative, value: value };
       const buf = new Uint8Array(data.buffer, data.byteOffset, varIntLen);
-      checkCanonicalEncoding(v, buf);
-      return { cbor: { isCbor: true, type: MajorType.Negative, value: v }, len: varIntLen };
+      checkCanonicalEncoding(cbor, buf);
+      return { cbor, len: varIntLen };
     } case MajorType.ByteString: {
       const dataLen = value;
       if (typeof dataLen === 'bigint') {
@@ -202,8 +200,10 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
   }
 }
 
-function checkCanonicalEncoding(f: any, buf: Uint8Array) {
-  const buf2 = encodeCbor(f);
+function checkCanonicalEncoding(cbor: Cbor | any, buf: Uint8Array) {
+  // If it's already a CBOR object, encode it directly
+  // Otherwise treat it as a native value (for floats, etc.)
+  const buf2 = isCbor(cbor) ? cborData(cbor) : encodeCbor(cbor);
   if (!areBytesEqual(buf, buf2)) {
     throw new Error("Non-canonical encoding");
   }

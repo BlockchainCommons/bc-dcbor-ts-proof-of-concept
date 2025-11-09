@@ -39,7 +39,8 @@ export class CborMap {
     if (value === undefined) {
       return undefined;
     }
-    return value.value.value as V;
+    // Extract CBOR value: primitives become native types, maps/arrays preserve structure
+    return extractCbor(value.value) as V;
   }
 
   delete<K>(key: K): boolean {

@@ -14,7 +14,13 @@ export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
     case MajorType.Unsigned:
       return c.value;
     case MajorType.Negative:
-      return c.value;
+      // Convert stored magnitude back to actual negative value
+      // c.value stores the magnitude to encode, so actual value is -c.value-1
+      if (typeof c.value === 'bigint') {
+        return -c.value - 1n;
+      } else {
+        return -c.value - 1;
+      }
     case MajorType.ByteString:
       return c.value;
     case MajorType.Text:
@@ -22,7 +28,9 @@ export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
     case MajorType.Array:
       return c.value.map(extractCbor);
     case MajorType.Map:
-      return c.value;
+      // Return the Cbor object itself, not the CborMap
+      // This allows callers to use isMap() and navigate nested structures
+      return c;
     case MajorType.Tagged:
       return c;
     case MajorType.Simple:
@@ -78,7 +86,8 @@ export function getCborInteger(cbor: Cbor): number | undefined {
   if (cbor.type == MajorType.Unsigned && typeof cbor.value == 'number') {
     return cbor.value;
   } else if (cbor.type == MajorType.Negative && typeof cbor.value == 'number') {
-    return cbor.value;
+    // Convert stored magnitude back to actual negative value
+    return -cbor.value - 1;
   }
   return undefined;
 }
@@ -96,7 +105,12 @@ export function getCborNumber(cbor: Cbor): CborNumber | undefined {
     case MajorType.Unsigned:
       return cbor.value;
     case MajorType.Negative:
-      return cbor.value;
+      // Convert stored magnitude back to actual negative value
+      if (typeof cbor.value === 'bigint') {
+        return -cbor.value - 1n;
+      } else {
+        return -cbor.value - 1;
+      }
     case MajorType.Simple:
       if (isSimpleFloat(cbor.value)) {
         return cbor.value.float;

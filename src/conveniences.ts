@@ -176,7 +176,12 @@ export function asUnsigned(cbor: Cbor): number | bigint | undefined {
  */
 export function asNegative(cbor: Cbor): number | bigint | undefined {
   if (cbor.type === MajorType.Negative) {
-    return cbor.value;
+    // Convert stored magnitude back to actual negative value
+    if (typeof cbor.value === 'bigint') {
+      return -cbor.value - 1n;
+    } else {
+      return -cbor.value - 1;
+    }
   }
   return undefined;
 }
@@ -188,8 +193,15 @@ export function asNegative(cbor: Cbor): number | bigint | undefined {
  * @returns Integer or undefined
  */
 export function asInteger(cbor: Cbor): number | bigint | undefined {
-  if (cbor.type === MajorType.Unsigned || cbor.type === MajorType.Negative) {
+  if (cbor.type === MajorType.Unsigned) {
     return cbor.value;
+  } else if (cbor.type === MajorType.Negative) {
+    // Convert stored magnitude back to actual negative value
+    if (typeof cbor.value === 'bigint') {
+      return -cbor.value - 1n;
+    } else {
+      return -cbor.value - 1;
+    }
   }
   return undefined;
 }
@@ -288,8 +300,16 @@ export function asFloat(cbor: Cbor): number | undefined {
  * @returns Number or undefined
  */
 export function asNumber(cbor: Cbor): CborNumber | undefined {
-  if (cbor.type === MajorType.Unsigned || cbor.type === MajorType.Negative) {
+  if (cbor.type === MajorType.Unsigned) {
     return cbor.value;
+  }
+  if (cbor.type === MajorType.Negative) {
+    // Convert stored magnitude back to actual negative value
+    if (typeof cbor.value === 'bigint') {
+      return -cbor.value - 1n;
+    } else {
+      return -cbor.value - 1;
+    }
   }
   if (cbor.type === MajorType.Simple && isSimpleFloat(cbor.value)) {
     return cbor.value.float;

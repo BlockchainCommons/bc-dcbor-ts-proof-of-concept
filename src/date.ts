@@ -227,7 +227,12 @@ export class CborDate implements CBORTaggedEncodable, CBORTaggedDecodable<CborDa
         break;
 
       case MajorType.Negative:
-        timestamp = typeof c.value === 'number' ? c.value : Number(c.value);
+        // Convert stored magnitude back to actual negative value
+        if (typeof c.value === 'bigint') {
+          timestamp = Number(-c.value - 1n);
+        } else {
+          timestamp = -c.value - 1;
+        }
         break;
 
       case MajorType.Simple:

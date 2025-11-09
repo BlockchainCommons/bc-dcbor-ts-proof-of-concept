@@ -235,7 +235,12 @@ function formatUnsigned(value: number | bigint): string {
  * Format negative integer.
  */
 function formatNegative(value: number | bigint): string {
-  return String(value);
+  // Value is stored as magnitude, convert to actual negative value for display
+  if (typeof value === 'bigint') {
+    return String(-value - 1n);
+  } else {
+    return String(-value - 1);
+  }
 }
 
 /**
