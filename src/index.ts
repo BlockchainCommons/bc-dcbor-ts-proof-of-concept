@@ -55,6 +55,9 @@ export {
   DiagnosticOptions
 } from './diag';
 
+// Hash functions
+export { cborHash } from './hash';
+
 // Walk/Traversal functionality
 export {
   walk,

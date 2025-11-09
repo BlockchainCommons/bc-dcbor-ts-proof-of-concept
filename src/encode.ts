@@ -34,11 +34,11 @@ export function cbor(value: Cbor | any): Cbor {
     const normalized = value.normalize('NFC');
     return { isCbor: true, type: MajorType.Text, value: normalized };
   } else if (value === null) {
-    return Cbor.null;
+    return Cbor.Null;
   } else if (value === true) {
-    return Cbor.true;
+    return Cbor.True;
   } else if (value === false) {
-    return Cbor.false;
+    return Cbor.False;
   } else if (Array.isArray(value)) {
     return { isCbor: true, type: MajorType.Array, value: value.map(cbor) };
   } else if (value instanceof Uint8Array) {

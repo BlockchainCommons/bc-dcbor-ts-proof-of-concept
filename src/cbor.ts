@@ -39,19 +39,31 @@ export type Cbor = CborUnsignedType |
 /**
  * CBOR constants and helper methods.
  *
- * Provides constants for common simple values (false, true, null) and static methods
+ * Provides constants for common simple values (False, True, Null) and static methods
  * matching the Rust CBOR API for encoding/decoding.
  */
 export const Cbor = {
-  // Static CBOR simple values
-  false: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.False },
-  true: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.True },
-  null: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.Null },
+  // Static CBOR simple values (matching Rust naming)
+  False: { isCbor: true as const, type: MajorType.Simple as const, value: SimpleValue.False },
+  True: { isCbor: true as const, type: MajorType.Simple as const, value: SimpleValue.True },
+  Null: { isCbor: true as const, type: MajorType.Simple as const, value: SimpleValue.Null },
 
-  // Rust-style capitalized aliases
-  False: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.False },
-  True: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.True },
-  Null: { isCbor: true as const, type: MajorType.Simple, value: SimpleValue.Null },
+  // ============================================================================
+  // Convenience Methods (matches Rust CBOR convenience constructors)
+  // ============================================================================
+
+  /**
+   * Creates a CBOR value from any JavaScript value.
+   *
+   * Matches Rust's `CBOR::from()` behavior for various types.
+   *
+   * @param value - Any JavaScript value (number, string, boolean, null, array, object, etc.)
+   * @returns A CBOR symbolic representation
+   */
+  from(value: any): Cbor {
+    const { cbor } = require('./encode');
+    return cbor(value);
+  },
 
   // ============================================================================
   // Decoding Methods (matches Rust CBOR::try_from_*)
@@ -112,5 +124,71 @@ export const Cbor = {
   toHex(cbor: Cbor): string {
     const { bytesToHex } = require('./data-utils');
     return bytesToHex(this.toCborData(cbor));
+  },
+
+  // ============================================================================
+  // Display/Debug Formatting (matches Rust Display and Debug traits)
+  // ============================================================================
+
+  /**
+   * Formats a CBOR value as diagnostic notation (flat, single-line).
+   *
+   * Matches Rust's `Display` trait (to_string(), format!("{}")).
+   *
+   * @param cbor - The CBOR value to format
+   * @returns A string in CBOR diagnostic notation
+   */
+  toString(cbor: Cbor): string {
+    const { cborDiagnostic } = require('./diag');
+    return cborDiagnostic(cbor, { flat: true });
+  },
+
+  /**
+   * Formats a CBOR value with detailed type annotations.
+   *
+   * Matches Rust's `Debug` trait (format!("{:?}")).
+   *
+   * @param cbor - The CBOR value to format
+   * @returns A string with type annotations
+   */
+  toDebugString(cbor: Cbor): string {
+    const { cborDebug } = require('./debug');
+    return cborDebug(cbor);
+  },
+
+  /**
+   * Formats a CBOR value as pretty-printed (multi-line) diagnostic notation.
+   *
+   * @param cbor - The CBOR value to format
+   * @returns A multi-line string in CBOR diagnostic notation
+   */
+  toDiagnostic(cbor: Cbor): string {
+    const { cborDiagnostic } = require('./diag');
+    return cborDiagnostic(cbor, { flat: false });
+  },
+
+  // ============================================================================
+  // Hash Implementation (matches Rust Hash trait)
+  // ============================================================================
+
+  /**
+   * Computes a hash value for a CBOR value.
+   *
+   * Matches Rust's `Hash` trait implementation. The hash is deterministic
+   * and based on the CBOR's type (discriminant) and value.
+   *
+   * This can be useful for:
+   * - Using CBOR values as Map/Set keys
+   * - Equality comparisons
+   * - Caching/memoization
+   *
+   * Note: This uses a simple 32-bit FNV-1a hash algorithm for JavaScript compatibility.
+   *
+   * @param cbor - The CBOR value to hash
+   * @returns A 32-bit hash value as a number
+   */
+  hash(cbor: Cbor): number {
+    const { cborHash } = require('./hash');
+    return cborHash(cbor);
   },
 };

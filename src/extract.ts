@@ -57,9 +57,9 @@ export function expectCborTagged(cbor: Cbor, tag: number): any {
 
 export function getCborBoolean(cbor: Cbor): boolean | undefined {
   if (cbor.type == MajorType.Simple) {
-    if (cbor.value == Cbor.true.value) {
+    if (cbor.value == Cbor.True.value) {
       return true;
-    } else if (cbor.value == Cbor.false.value) {
+    } else if (cbor.value == Cbor.False.value) {
       return false;
     }
   }

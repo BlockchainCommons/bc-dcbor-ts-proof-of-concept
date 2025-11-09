@@ -188,11 +188,11 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
         } default:
           switch (value) {
             case 20:
-              return { cbor: Cbor.false, len: varIntLen };
+              return { cbor: Cbor.False, len: varIntLen };
             case 21:
-              return { cbor: Cbor.true, len: varIntLen };
+              return { cbor: Cbor.True, len: varIntLen };
             case 22:
-              return { cbor: Cbor.null, len: varIntLen };
+              return { cbor: Cbor.Null, len: varIntLen };
             default:
               // Other simple values - stored as number for compatibility
               // Per dCBOR spec, only false/true/null/floats are valid, but we handle others for compatibility
