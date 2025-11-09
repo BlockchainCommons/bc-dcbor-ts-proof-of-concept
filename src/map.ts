@@ -179,7 +179,7 @@ export class CborMap {
    * Keys are sorted in lexicographic order of their encoded CBOR bytes.
    */
   get entries(): MapEntry[] {
-    return this.dict.map((value, _key) => ({ key: value.key, value: value.value }));
+    return this.dict.map((value: MapEntry, _key: MapKey) => ({ key: value.key, value: value.value }));
   }
 
   /**
