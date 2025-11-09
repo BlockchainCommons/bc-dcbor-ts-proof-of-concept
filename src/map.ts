@@ -1,9 +1,10 @@
 import { SortedMap } from 'collections/sorted-map';
 import { Cbor } from './cbor';
-import { cbor, cborData, encodeCbor } from './encode';
-import { areBytesEqual, bytesToHex, lexicographicallyCompareBytes } from './data-utils';
-import { cborDebug, cborDiagnostic } from './debug';
-import { extractCbor } from './extract';
+import { cbor, cborData, encodeCbor } from './cbor';
+import { areBytesEqual, lexicographicallyCompareBytes } from './stdlib';
+import { bytesToHex } from './dump';
+import { diagnostic } from './diag';
+import { extractCbor } from './conveniences';
 
 type MapKey = Uint8Array;
 export type MapEntry = { key: Cbor, value: Cbor };
@@ -98,11 +99,11 @@ export class CborMap {
   }
 
   private static entryDebug(entry: MapEntry): string {
-    return `0x${bytesToHex(encodeCbor(entry.key))}: (${cborDebug(entry.key)}, ${cborDebug(entry.value)})`;
+    return `0x${bytesToHex(encodeCbor(entry.key))}: (${diagnostic(entry.key)}, ${diagnostic(entry.value)})`;
   }
 
   private static entryDiagnostic(entry: MapEntry): string {
-    return `${cborDiagnostic(entry.key)}: ${cborDiagnostic(entry.value)}`;
+    return `${diagnostic(entry.key)}: ${diagnostic(entry.value)}`;
   }
 
   *[Symbol.iterator](): Iterator<[Cbor, Cbor]> {

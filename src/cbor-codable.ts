@@ -8,7 +8,7 @@
  */
 
 import { Cbor } from './cbor';
-import { encodeCbor } from './encode';
+import { encodeCbor } from './cbor';
 
 /**
  * Interface for types that can be encoded to CBOR.

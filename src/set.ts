@@ -8,7 +8,7 @@
  */
 
 import { Cbor, MajorType } from './cbor';
-import { cbor, cborData } from './encode';
+import { cbor, cborData } from './cbor';
 import { CborMap } from './map';
 import { createTag } from './tag';
 import { TAG_SET } from './tags';
@@ -19,8 +19,8 @@ import {
   validateTag,
   extractTaggedContent
 } from './cbor-tagged';
-import { extractCbor } from './extract';
-import { bytesToHex } from './data-utils';
+import { extractCbor } from './conveniences';
+import { bytesToHex } from './dump';
 
 /**
  * CBOR Set type with tag(258) encoding.

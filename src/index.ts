@@ -30,7 +30,7 @@ export {
 } from './simple';
 
 // Encoding/Decoding
-export { cbor, cborData } from './encode';
+export { cbor, cborData } from './cbor';
 export { decodeCbor } from './decode';
 
 // Map and Set

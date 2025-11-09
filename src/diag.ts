@@ -12,7 +12,7 @@
 
 import { Cbor, MajorType } from './cbor';
 import { isFloat } from './simple';
-import { bytesToHex } from './data-utils';
+import { bytesToHex } from './dump';
 import { TagsStore, getGlobalTagsStore } from './tags-store';
 import { Tag } from './tag';
 import type { WalkElement } from './walk';

@@ -8,8 +8,8 @@
  */
 
 import { Cbor, MajorType } from './cbor';
-import { cbor } from './encode';
-import { extractCbor } from './extract';
+import { cbor } from './cbor';
+import { extractCbor } from './conveniences';
 import { createTag } from './tag';
 import { TAG_EPOCH_DATE_TIME } from './tags';
 import {

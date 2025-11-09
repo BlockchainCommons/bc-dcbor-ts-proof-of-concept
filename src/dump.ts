@@ -6,7 +6,26 @@
  * @module dump
  */
 
-import { bytesToHex } from './data-utils';
+/**
+ * Convert bytes to hex string.
+ */
+export function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * Convert hex string to bytes.
+ */
+export function hexToBytes(hexString: string): Uint8Array {
+  const hex = hexString.replace(/\s/g, '');
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < hex.length; i += 2) {
+    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+  }
+  return bytes;
+}
 
 /**
  * Create a hex dump of binary data with optional annotations.

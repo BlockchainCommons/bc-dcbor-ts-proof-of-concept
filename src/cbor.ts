@@ -1,5 +1,12 @@
 import { CborMap } from "./map";
 import type { Simple } from "./simple";
+import { simpleCborData } from "./simple";
+import { hasFractionalPart } from "./float";
+import { encodeVarInt } from "./varint";
+import { concatBytes } from "./stdlib";
+import { bytesToHex } from "./dump";
+import { hexToBytes } from "./dump";
+
 export type { Simple };
 
 export enum MajorType {
@@ -62,7 +69,6 @@ export const Cbor = {
    * @returns A CBOR symbolic representation
    */
   from(value: any): Cbor {
-    const { cbor } = require('./encode');
     return cbor(value);
   },
 
@@ -94,7 +100,6 @@ export const Cbor = {
    * @throws Error if the hex string is invalid or the resulting data is not valid dCBOR
    */
   tryFromHex(hex: string): Cbor {
-    const { hexToBytes } = require('./data-utils');
     const data = hexToBytes(hex);
     return this.tryFromData(data);
   },
@@ -112,7 +117,6 @@ export const Cbor = {
    * @returns A Uint8Array containing the encoded CBOR data
    */
   toCborData(cbor: Cbor): Uint8Array {
-    const { cborData } = require('./encode');
     return cborData(cbor);
   },
 
@@ -123,7 +127,6 @@ export const Cbor = {
    * @returns A hexadecimal string representation
    */
   toHex(cbor: Cbor): string {
-    const { bytesToHex } = require('./data-utils');
     return bytesToHex(this.toCborData(cbor));
   },
 
@@ -172,24 +175,152 @@ export const Cbor = {
   // Hash Implementation (matches Rust Hash trait)
   // ============================================================================
 
-  /**
-   * Computes a hash value for a CBOR value.
-   *
-   * Matches Rust's `Hash` trait implementation. The hash is deterministic
-   * and based on the CBOR's type (discriminant) and value.
-   *
-   * This can be useful for:
-   * - Using CBOR values as Map/Set keys
-   * - Equality comparisons
-   * - Caching/memoization
-   *
-   * Note: This uses a simple 32-bit FNV-1a hash algorithm for JavaScript compatibility.
-   *
-   * @param cbor - The CBOR value to hash
-   * @returns A 32-bit hash value as a number
-   */
-  hash(cbor: Cbor): number {
-    const { cborHash } = require('./hash');
-    return cborHash(cbor);
-  },
 };
+
+// ============================================================================
+// Encoding Functions (matches Rust CBOR conversion logic)
+// ============================================================================
+
+export interface ToCbor {
+  toCbor(): Cbor;
+}
+
+/**
+ * Convert any value to a CBOR representation.
+ * Matches Rust's `From` trait implementations for CBOR.
+ */
+export function cbor(value: Cbor | any): Cbor {
+  if (isCbor(value)) {
+    return value;
+  }
+
+  if (isCborNumber(value)) {
+    if (typeof value === 'number' && isNaN(value)) {
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: NaN } };
+    } else if (typeof value === 'number' && hasFractionalPart(value)) {
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: value } };
+    } else if (value == Infinity) {
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: Infinity } };
+    } else if (value == -Infinity) {
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: -Infinity } };
+    } else if (value < 0) {
+      // Store the magnitude to encode, matching Rust's representation
+      // For a negative value n, CBOR encodes it as -1-n, so we store -n-1
+      if (typeof value === 'bigint') {
+        return { isCbor: true, type: MajorType.Negative, value: -value - 1n };
+      } else {
+        return { isCbor: true, type: MajorType.Negative, value: -value - 1 };
+      }
+    } else {
+      return { isCbor: true, type: MajorType.Unsigned, value: value };
+    }
+  } else if (typeof value === 'string') {
+    // dCBOR requires all text strings to be in Unicode Normalization Form C (NFC)
+    // This ensures deterministic encoding regardless of how the string was composed
+    const normalized = value.normalize('NFC');
+    return { isCbor: true, type: MajorType.Text, value: normalized };
+  } else if (value === null) {
+    return { isCbor: true, type: MajorType.Simple, value: { type: 'Null' } };
+  } else if (value === true) {
+    return { isCbor: true, type: MajorType.Simple, value: { type: 'True' } };
+  } else if (value === false) {
+    return { isCbor: true, type: MajorType.Simple, value: { type: 'False' } };
+  } else if (Array.isArray(value)) {
+    return { isCbor: true, type: MajorType.Array, value: value.map(cbor) };
+  } else if (value instanceof Uint8Array) {
+    return { isCbor: true, type: MajorType.ByteString, value: value };
+  } else if (value instanceof CborMap) {
+    return { isCbor: true, type: MajorType.Map, value: value };
+  } else if (value instanceof Map) {
+    return { isCbor: true, type: MajorType.Map, value: new CborMap(value) };
+  } else if ('toCbor' in value && typeof value.toCbor === 'function') {
+    return value.toCbor();
+  } else if (typeof value === 'object' && value !== null) {
+    // Handle plain objects by converting to CborMap
+    const map = new CborMap();
+    for (const [key, val] of Object.entries(value)) {
+      map.set(cbor(key), cbor(val));
+    }
+    return { isCbor: true, type: MajorType.Map, value: map };
+  }
+
+  throw new Error("Not supported");
+}
+
+export function cborHex(value: any): string {
+  return bytesToHex(cborData(value));
+}
+
+/**
+ * Encode a CBOR value to binary data.
+ * Matches Rust's `CBOR::to_cbor_data()` method.
+ */
+export function cborData(value: any): Uint8Array {
+  const c = cbor(value);
+  switch (c.type) {
+    case MajorType.Unsigned: {
+      return encodeVarInt(c.value, MajorType.Unsigned);
+    }
+    case MajorType.Negative: {
+      // Value is already stored as the magnitude to encode (matching Rust)
+      return encodeVarInt(c.value, MajorType.Negative);
+    }
+    case MajorType.ByteString: {
+      if (c.value instanceof Uint8Array) {
+        const lengthBytes = encodeVarInt(c.value.length, MajorType.ByteString);
+        return new Uint8Array([...lengthBytes, ...c.value]);
+      }
+      break;
+    }
+    case MajorType.Text: {
+      if (typeof c.value === 'string') {
+        const utf8Bytes = new TextEncoder().encode(c.value);
+        const lengthBytes = encodeVarInt(utf8Bytes.length, MajorType.Text);
+        return new Uint8Array([...lengthBytes, ...utf8Bytes]);
+      }
+      break;
+    }
+    case MajorType.Tagged: {
+      const tagged = c as CborTaggedType;
+      if (typeof tagged.tag === 'bigint' || typeof tagged.tag === 'number') {
+        const tagBytes = encodeVarInt(tagged.tag, MajorType.Tagged);
+        const valueBytes = cborData(tagged.value);
+        return new Uint8Array([...tagBytes, ...valueBytes]);
+      }
+      break;
+    }
+    case MajorType.Simple: {
+      // Use the simpleCborData function from simple.ts
+      return simpleCborData(c.value);
+    }
+    case MajorType.Array: {
+      const array = c as CborArrayType;
+      const arrayBytes = array.value.map(cborData);
+      const flatArrayBytes = concatBytes(arrayBytes);
+      const lengthBytes = encodeVarInt(array.value.length, MajorType.Array);
+      return new Uint8Array([...lengthBytes, ...flatArrayBytes]);
+    }
+    case MajorType.Map: {
+      let map = c as CborMapType;
+      let entries = map.value.entries;
+      const arrayBytes = entries.map(({key, value}) => concatBytes([cborData(key), cborData(value)]));
+      const flatArrayBytes = concatBytes(arrayBytes);
+      const lengthBytes = encodeVarInt(entries.length, MajorType.Map);
+      return new Uint8Array([...lengthBytes, ...flatArrayBytes]);
+    }
+  }
+  throw new Error("Invalid CBOR");
+}
+
+export function encodeCbor(value: any): Uint8Array {
+  return cborData(cbor(value));
+}
+
+export function taggedCbor(tag: CborNumber, value: any): Cbor {
+  return {
+    isCbor: true,
+    type: MajorType.Tagged,
+    tag: tag,
+    value: cbor(value),
+  };
+}

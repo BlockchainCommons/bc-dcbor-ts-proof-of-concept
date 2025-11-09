@@ -30,7 +30,7 @@ export type {
 } from './cbor';
 
 // Encoding/Decoding
-export { cbor, cborData } from './encode';
+export { cbor, cborData } from './cbor';
 export { decodeCbor } from './decode';
 
 // Codable interfaces
@@ -54,7 +54,6 @@ export type { TagsStoreTrait } from './tags-store';
 // Diagnostic formatting
 export { diagnostic, diagnosticAnnotated, diagnosticFlat, diagnosticOpt, summary } from './diag';
 export type { DiagFormatOpts } from './diag';
-export { cborDebug, cborDiagnostic } from './debug';
 
 // Walk/traversal
 export { walk, EdgeType } from './walk';
@@ -65,7 +64,7 @@ export type { Error, Result } from './error';
 export { Ok, Err, errorMsg, errorToString, throwError } from './error';
 
 // Utilities
-export { bytesToHex, hexToBytes } from './data-utils';
+export { bytesToHex, hexToBytes } from './dump';
 export { isFloat } from './simple';
 export { numberToBinary, binaryToNumber } from './float';
 

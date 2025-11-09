@@ -10,6 +10,51 @@
 import { Cbor, MajorType, CborNumber } from './cbor';
 import { CborMap } from './map';
 import { isFloat as isSimpleFloat } from './simple';
+import { decodeCbor } from './decode';
+
+// ============================================================================
+// Extraction
+// ============================================================================
+
+/**
+ * Extract native JavaScript value from CBOR.
+ * Converts CBOR types to their JavaScript equivalents.
+ */
+export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
+  let c: Cbor;
+  if (cbor instanceof Uint8Array) {
+    c = decodeCbor(cbor);
+  } else {
+    c = cbor;
+  }
+  switch (c.type) {
+    case MajorType.Unsigned:
+      return c.value;
+    case MajorType.Negative:
+      if (typeof c.value === 'bigint') {
+        return -c.value - 1n;
+      } else {
+        return -c.value - 1;
+      }
+    case MajorType.ByteString:
+      return c.value;
+    case MajorType.Text:
+      return c.value;
+    case MajorType.Array:
+      return c.value.map(extractCbor);
+    case MajorType.Map:
+      return c;
+    case MajorType.Tagged:
+      return c;
+    case MajorType.Simple:
+      if (c.value.type === 'True') return true;
+      if (c.value.type === 'False') return false;
+      if (c.value.type === 'Null') return null;
+      if (c.value.type === 'Float') return c.value.value;
+      return c;
+  }
+  return undefined;
+}
 
 // ============================================================================
 // Type Guards
