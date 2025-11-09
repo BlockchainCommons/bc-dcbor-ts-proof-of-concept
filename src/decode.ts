@@ -142,7 +142,7 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
       // dCBOR requires all text strings to be in Unicode Normalization Form C (NFC)
       // Reject any strings that are not already in NFC form
       if (text.normalize('NFC') !== text) {
-        throw new Error('Text string is not in Unicode Normalization Form C (NFC)');
+        throw new Error('Text string is not in Unicode Canonical Normalization Form C');
       }
       return { cbor: { isCbor: true, type: MajorType.Text, value: text }, len: varIntLen + textLen };
     } case MajorType.Array: {

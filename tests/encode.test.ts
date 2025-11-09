@@ -6,10 +6,13 @@
  * All 35 test functions from the Rust version are translated here.
  */
 
-import { cbor, cborData, cborDebug, cborDiagnostic, decodeCbor, cborHex, Cbor } from '../src/cbor';
+import { cbor, cborData, Cbor, toTaggedValue } from '../src/cbor';
+import { diagnostic, diagnosticFlat } from '../src/diag';
+import { decodeCbor } from '../src/decode';
+import { hex } from '../src/dump';
 import { ByteString } from '../src/byte-string';
 import { CborMap } from '../src/map';
-import { Date as CborDate } from '../src/date';
+import { CborDate } from '../src/date';
 import { createTag } from '../src/tag';
 import { extractCbor } from '../src/conveniences';
 
@@ -20,6 +23,65 @@ function hexToBytes(hex: string): Uint8Array {
     bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
   }
   return bytes;
+}
+
+/** Helper: cborDebug - Get debug description (matches Rust's format!("{:?}", cbor)) */
+function cborDebug(cborValue: Cbor): string {
+  // Generate debug format with type information
+  switch (cborValue.type) {
+    case 0: // Unsigned
+      return `unsigned(${cborValue.value})`;
+    case 1: // Negative
+      const negValue = typeof cborValue.value === 'bigint'
+        ? -(cborValue.value as bigint) - 1n
+        : -(cborValue.value as number) - 1;
+      return `negative(${negValue})`;
+    case 2: // ByteString
+      const bytes = cborValue.value as Uint8Array;
+      const hexStr = bytesToHex(bytes);
+      return `bytes(${hexStr})`;
+    case 3: // Text
+      return `text("${cborValue.value}")`;
+    case 4: // Array
+      const items = (cborValue.value as Cbor[]).map(cborDebug);
+      return `array([${items.join(', ')}])`;
+    case 5: // Map
+      const map = cborValue.value as any;
+      if (map && map.debug) {
+        return map.debug;
+      }
+      return 'map({})';
+    case 6: // Tagged
+      const content = cborDebug(cborValue.value as Cbor);
+      return `tagged(${cborValue.tag}, ${content})`;
+    case 7: // Simple
+      const simple = cborValue.value;
+      if (typeof simple === 'object' && simple !== null && 'type' in simple) {
+        switch (simple.type) {
+          case 'True':
+            return 'simple(true)';
+          case 'False':
+            return 'simple(false)';
+          case 'Null':
+            return 'simple(null)';
+          case 'Float':
+            return `simple(${simple.value})`;
+        }
+      }
+      return 'simple';
+  }
+  return String(cborValue);
+}
+
+/** Helper: cborDiagnostic - Get diagnostic description (matches Rust's format!("{}", cbor)) */
+function cborDiagnostic(cborValue: Cbor): string {
+  // Use flat output to match Rust's Display trait (format!("{}", cbor))
+  return diagnosticFlat(cborValue);
+}
+
+/** Helper: cborHex - Get hex encoding */
+function cborHex(cborValue: Cbor): string {
+  return hex(cborValue);
 }
 
 /** Helper to convert Uint8Array to hex string */
@@ -425,7 +487,7 @@ describe('encode tests', () => {
 
   // Test 13: encode_tagged
   test('encode_tagged', () => {
-    const tagged = cbor({ tag: 1, value: 'Hello' });
+    const tagged = toTaggedValue(1, 'Hello');
     testCbor(
       tagged,
       'tagged(1, text("Hello"))',

@@ -86,10 +86,8 @@ export class TagsStore implements TagsStoreTrait {
   private summarizers: Map<string, CBORSummarizer> = new Map();
 
   constructor() {
-    // Register all standard tags by default
-    for (const tag of ALL_STANDARD_TAGS) {
-      this.insert(tag);
-    }
+    // Start with empty store, matching Rust's Default implementation
+    // Tags must be explicitly registered using insert() or registerTags()
   }
 
   /**
@@ -108,6 +106,27 @@ export class TagsStore implements TagsStoreTrait {
     this.tagsByValue.set(key, tag);
     if (tag.name) {
       this.tagsByName.set(tag.name, tag);
+    }
+  }
+
+  /**
+   * Insert multiple tags into the registry.
+   * Matches Rust's insert_all() method.
+   *
+   * @param tags - Array of tags to register
+   *
+   * @example
+   * ```typescript
+   * const store = new TagsStore();
+   * store.insertAll([
+   *   createTag(1, 'date'),
+   *   createTag(100, 'custom')
+   * ]);
+   * ```
+   */
+  insertAll(tags: Tag[]): void {
+    for (const tag of tags) {
+      this.insert(tag);
     }
   }
 

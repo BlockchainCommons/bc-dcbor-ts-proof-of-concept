@@ -94,6 +94,11 @@ export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
  * @returns Annotated hex string
  */
 export function hexAnnotated(cbor: Cbor, tagsStore?: TagsStore): string {
+  // Use global tags store if not provided
+  if (!tagsStore) {
+    const { getGlobalTagsStore } = require('./tags-store');
+    tagsStore = getGlobalTagsStore();
+  }
   return hexOpt(cbor, { annotate: true, tagsStore });
 }
 

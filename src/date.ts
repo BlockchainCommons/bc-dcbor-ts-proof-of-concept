@@ -489,17 +489,19 @@ export class CborDate implements CBORTagged, CBORTaggedEncodable, CBORTaggedDeco
    */
   toString(): string {
     const dt = this._datetime;
-    const time = dt.getUTCHours() +
-                 dt.getUTCMinutes() +
-                 dt.getUTCSeconds() +
-                 dt.getUTCMilliseconds();
+    // Check only hours, minutes, and seconds (not milliseconds) to match Rust behavior
+    const hasTime = dt.getUTCHours() !== 0 ||
+                    dt.getUTCMinutes() !== 0 ||
+                    dt.getUTCSeconds() !== 0;
 
-    if (time === 0) {
-      // Midnight - show only date
+    if (!hasTime) {
+      // Midnight (with possible subsecond precision) - show only date
       return dt.toISOString().split('T')[0];
     } else {
-      // Show full ISO datetime
-      return dt.toISOString();
+      // Show full ISO datetime without milliseconds (matches Rust's SecondsFormat::Secs)
+      const iso = dt.toISOString();
+      // Remove milliseconds: "2023-02-08T15:30:45.000Z" -> "2023-02-08T15:30:45Z"
+      return iso.replace(/\.\d{3}Z$/, 'Z');
     }
   }
 

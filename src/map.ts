@@ -224,7 +224,51 @@ export class CborMap {
   }
 
   private static entryDebug(entry: MapEntry): string {
-    return `0x${bytesToHex(encodeCbor(entry.key))}: (${diagnostic(entry.key)}, ${diagnostic(entry.value)})`;
+    // Format with full type information for debug output
+    const keyDebug = CborMap.formatDebug(entry.key);
+    const valueDebug = CborMap.formatDebug(entry.value);
+    return `0x${bytesToHex(encodeCbor(entry.key))}: (${keyDebug}, ${valueDebug})`;
+  }
+
+  private static formatDebug(cbor: Cbor): string {
+    switch (cbor.type) {
+      case 0: // Unsigned
+        return `unsigned(${cbor.value})`;
+      case 1: // Negative
+        const negValue = typeof cbor.value === 'bigint'
+          ? -(cbor.value as bigint) - 1n
+          : -(cbor.value as number) - 1;
+        return `negative(${negValue})`;
+      case 2: // ByteString
+        const bytes = cbor.value as Uint8Array;
+        return `bytes(${bytesToHex(bytes)})`;
+      case 3: // Text
+        return `text("${cbor.value}")`;
+      case 4: // Array
+        const items = (cbor.value as Cbor[]).map(CborMap.formatDebug);
+        return `array([${items.join(', ')}])`;
+      case 5: // Map
+        const map = cbor.value as CborMap;
+        return map.debug;
+      case 6: // Tagged
+        return `tagged(${cbor.tag}, ${CborMap.formatDebug(cbor.value as Cbor)})`;
+      case 7: // Simple
+        const simple = cbor.value;
+        if (typeof simple === 'object' && simple !== null && 'type' in simple) {
+          switch (simple.type) {
+            case 'True':
+              return 'simple(true)';
+            case 'False':
+              return 'simple(false)';
+            case 'Null':
+              return 'simple(null)';
+            case 'Float':
+              return `simple(${simple.value})`;
+          }
+        }
+        return 'simple';
+    }
+    return diagnostic(cbor);
   }
 
   private static entryDiagnostic(entry: MapEntry): string {

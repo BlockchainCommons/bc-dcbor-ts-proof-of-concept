@@ -127,9 +127,10 @@ export function f64CborData(value: number): Uint8Array {
     return CBOR_NAN;
   }
 
-  // Encode as f64
-  const bits = new DataView(numberToBinary64(n).buffer).getBigUint64(0, false);
-  return encodeVarInt(Number(bits), MajorType.Simple);
+  // Encode as f64 - use encode_int style (always 8 bytes with 0x1b prefix)
+  const bytes = numberToBinary64(n);
+  const majorByte = 0xfb; // 0x1b | (MajorType.Simple << 5) = 0x1b | 0xe0 = 0xfb
+  return new Uint8Array([majorByte, ...bytes]);
 }
 
 /**

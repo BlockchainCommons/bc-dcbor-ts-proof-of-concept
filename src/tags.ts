@@ -268,3 +268,91 @@ export function getStandardTag(value: number | bigint): Tag | undefined {
 export function isStandardTag(value: number | bigint): boolean {
   return ALL_STANDARD_TAGS.some(tag => tag.value === value);
 }
+
+// ============================================================================
+// Global Tags Store Registration
+// Matches Rust's register_tags() functionality
+// ============================================================================
+
+import { TagsStore, getGlobalTagsStore } from './tags-store';
+import { CborDate } from './date';
+import { Cbor } from './cbor';
+
+// Tag constants matching Rust
+export const TAG_DATE = 1;
+export const TAG_NAME_DATE = 'date';
+
+/**
+ * Register standard tags in a specific tags store.
+ * Matches Rust's register_tags_in() function.
+ *
+ * @param tagsStore - The tags store to register tags into
+ */
+export function registerTagsIn(tagsStore: TagsStore): void {
+  const tags = [createTag(TAG_DATE, TAG_NAME_DATE)];
+  tagsStore.insertAll(tags);
+
+  // Set summarizer for date tag
+  tagsStore.setSummarizer(
+    TAG_DATE,
+    (untaggedCbor: Cbor, _flat: boolean): string => {
+      try {
+        return CborDate.fromUntaggedCbor(untaggedCbor).toString();
+      } catch (e) {
+        return String(untaggedCbor);
+      }
+    }
+  );
+}
+
+/**
+ * Register standard tags in the global tags store.
+ * Matches Rust's register_tags() function.
+ *
+ * This function is idempotent - calling it multiple times is safe.
+ */
+export function registerTags(): void {
+  const globalStore = getGlobalTagsStore();
+  registerTagsIn(globalStore);
+}
+
+/**
+ * Converts an array of tag values to their corresponding Tag objects.
+ * Matches Rust's tags_for_values() function.
+ *
+ * This function looks up each tag value in the global tag registry and returns
+ * an array of complete Tag objects. For any tag values that aren't
+ * registered in the global registry, it creates a basic Tag with just the
+ * value (no name).
+ *
+ * @param values - Array of numeric tag values to convert
+ * @returns Array of Tag objects corresponding to the input values
+ *
+ * @example
+ * ```typescript
+ * // Register some tags first
+ * registerTags();
+ *
+ * // Convert tag values to Tag objects
+ * const tags = tagsForValues([1, 42, 999]);
+ *
+ * // The first tag (value 1) should be registered as "date"
+ * console.log(tags[0].value); // 1
+ * console.log(tags[0].name); // "date"
+ *
+ * // Unregistered tags will have a value but no name
+ * console.log(tags[1].value); // 42
+ * console.log(tags[2].value); // 999
+ * ```
+ */
+export function tagsForValues(values: Array<number | bigint>): Tag[] {
+  const globalStore = getGlobalTagsStore();
+  return values.map(value => {
+    const tag = globalStore.tagForValue(value);
+    if (tag) {
+      return tag;
+    }
+    // Create basic tag with just the value
+    return createTag(value);
+  });
+}

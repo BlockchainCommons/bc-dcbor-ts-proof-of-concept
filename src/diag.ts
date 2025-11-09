@@ -77,7 +77,7 @@ const DEFAULT_OPTS: DiagFormatOpts = {
   flat: false,
   tags: 'global',
   indent: 0,
-  indentString: '  '
+  indentString: '    ' // 4 spaces to match Rust
 };
 
 /**
@@ -107,16 +107,18 @@ export function diagnosticOpt(cbor: Cbor, opts?: DiagFormatOpts): string {
  * Format CBOR value as standard diagnostic notation.
  *
  * @param cbor - CBOR value to format
- * @returns Diagnostic string (flat/single-line format)
+ * @returns Diagnostic string (pretty-printed with multiple lines for complex structures)
  *
  * @example
  * ```typescript
  * const value = cbor([1, 2, 3]);
- * console.log(diagnostic(value)); // "[1, 2, 3]"
+ * console.log(diagnostic(value));
+ * // For simple arrays: "[1, 2, 3]"
+ * // For nested structures: multi-line formatted output
  * ```
  */
 export function diagnostic(cbor: Cbor): string {
-  return diagnosticOpt(cbor, { flat: true });
+  return diagnosticOpt(cbor);
 }
 
 /**
@@ -125,7 +127,7 @@ export function diagnostic(cbor: Cbor): string {
  * Tagged values are displayed with their registered names instead of numeric tags.
  *
  * @param cbor - CBOR value to format
- * @returns Annotated diagnostic string (flat/single-line format)
+ * @returns Annotated diagnostic string (pretty-printed format)
  *
  * @example
  * ```typescript
@@ -135,7 +137,7 @@ export function diagnostic(cbor: Cbor): string {
  * ```
  */
 export function diagnosticAnnotated(cbor: Cbor): string {
-  return diagnosticOpt(cbor, { annotate: true, flat: true });
+  return diagnosticOpt(cbor, { annotate: true });
 }
 
 /**
@@ -272,37 +274,93 @@ function formatArray(items: Cbor[], opts: DiagFormatOpts): string {
     return '[]';
   }
 
-  if (opts.flat) {
-    // Single-line formatting
-    const formatted = items.map(item => formatDiagnostic(item, opts));
-    return `[${formatted.join(', ')}]`;
-  } else {
+  // Format items first to check their lengths
+  const formatted = items.map(item => formatDiagnostic(item, opts));
+
+  // Decide between single-line and multi-line based on complexity
+  const shouldUseMultiLine = !opts.flat && (
+    containsComplexStructure(items) ||
+    formatted.join(', ').length > 20 ||
+    formatted.some(s => s.length > 20)
+  );
+
+  if (shouldUseMultiLine) {
     // Multi-line formatting
     const indent = opts.indent || 0;
-    const indentStr = (opts.indentString || '  ').repeat(indent);
-    const itemIndentStr = (opts.indentString || '  ').repeat(indent + 1);
+    const indentStr = (opts.indentString || '    ').repeat(indent);
+    const itemIndentStr = (opts.indentString || '    ').repeat(indent + 1);
 
-    const formatted = items.map(item => {
+    const formattedWithIndent = items.map(item => {
       const childOpts = { ...opts, indent: indent + 1 };
       const itemStr = formatDiagnostic(item, childOpts);
       return `${itemIndentStr}${itemStr}`;
     });
 
-    return `[\n${formatted.join(',\n')}\n${indentStr}]`;
+    return `[\n${formattedWithIndent.join(',\n')}\n${indentStr}]`;
+  } else {
+    // Single-line formatting
+    return `[${formatted.join(', ')}]`;
   }
+}
+
+/**
+ * Check if items contain complex structures (arrays or maps).
+ */
+function containsComplexStructure(items: Cbor[]): boolean {
+  return items.some(item =>
+    item.type === MajorType.Array ||
+    item.type === MajorType.Map
+  );
 }
 
 /**
  * Format map.
  */
 function formatMap(map: any, opts: DiagFormatOpts): string {
-  // Get diagnostic representation from map
-  if (map && typeof map === 'object' && 'diagnostic' in map) {
-    return map.diagnostic;
+  // Extract entries from CborMap or use empty array
+  const entries = (map && map.entries) ? map.entries : [];
+
+  if (entries.length === 0) {
+    return '{}';
   }
 
-  // Fallback for plain objects
-  return '{}';
+  // Format each key-value pair
+  const formattedPairs = entries.map((entry: any) => ({
+    key: formatDiagnostic(entry.key, opts),
+    value: formatDiagnostic(entry.value, opts)
+  }));
+
+  // Decide between single-line and multi-line based on complexity
+  const totalLength = formattedPairs.reduce((sum: number, pair: any) =>
+    sum + pair.key.length + pair.value.length + 2, 0); // +2 for ": "
+
+  const shouldUseMultiLine = !opts.flat && (
+    entries.some((e: any) =>
+      e.key.type === MajorType.Array ||
+      e.key.type === MajorType.Map ||
+      e.value.type === MajorType.Array ||
+      e.value.type === MajorType.Map
+    ) ||
+    totalLength > 40 ||
+    entries.length > 3
+  );
+
+  if (shouldUseMultiLine) {
+    // Multi-line formatting
+    const indent = opts.indent || 0;
+    const indentStr = (opts.indentString || '    ').repeat(indent);
+    const itemIndentStr = (opts.indentString || '    ').repeat(indent + 1);
+
+    const formattedEntries = formattedPairs.map((pair: any) => {
+      return `${itemIndentStr}${pair.key}:\n${itemIndentStr}${pair.value}`;
+    });
+
+    return `{\n${formattedEntries.join(',\n')}\n${indentStr}}`;
+  } else {
+    // Single-line formatting
+    const pairs = formattedPairs.map((pair: any) => `${pair.key}: ${pair.value}`);
+    return `{${pairs.join(', ')}}`;
+  }
 }
 
 /**
@@ -321,23 +379,30 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
     }
   }
 
-  // Get tag name if annotation is enabled
-  let tagStr: string;
+  // Get tag name as comment if annotation is enabled
+  let comment: string | undefined;
   if (opts.annotate) {
     const store = resolveTagsStore(opts.tags);
     if (store) {
-      tagStr = store.nameForValue(tag);
-    } else {
-      tagStr = String(tag);
+      const assignedName = store.assignedNameForTag({ value: tag } as any);
+      if (assignedName) {
+        comment = assignedName;
+      }
     }
-  } else {
-    tagStr = String(tag);
   }
+
+  // Always use tag number (not name) in the output
+  const tagStr = String(tag);
 
   // Format content
   const contentStr = formatDiagnostic(content, opts);
 
-  return `${tagStr}(${contentStr})`;
+  // Add comment if present
+  const result = `${tagStr}(${contentStr})`;
+  if (comment) {
+    return `${result}   / ${comment} /`;
+  }
+  return result;
 }
 
 /**

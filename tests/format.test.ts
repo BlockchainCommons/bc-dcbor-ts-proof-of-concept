@@ -11,10 +11,12 @@
 
 import {
   cbor,
+  Cbor,
   CborMap,
   diagnostic,
   diagnosticFlat,
   diagnosticAnnotated,
+  diagnosticOpt,
   summary,
   hex,
   hexAnnotated,
@@ -25,7 +27,66 @@ import {
 // Helper function to get description (matches Rust's format!("{}", cbor))
 function cborDescription(value: any): string {
   const cborValue = cbor(value);
-  return diagnostic(cborValue);
+  // Matches Rust's Display trait - uses tag names instead of numbers
+  return formatAsDisplay(cborValue);
+}
+
+// Format CBOR value like Rust's Display trait
+function formatAsDisplay(cborValue: Cbor): string {
+  if (!cborValue || !cborValue.isCbor) {
+    return String(cborValue);
+  }
+
+  switch (cborValue.type) {
+    case 0: // Unsigned
+      return String(cborValue.value);
+    case 1: // Negative
+      const negValue = typeof cborValue.value === 'bigint'
+        ? -(cborValue.value as bigint) - 1n
+        : -(cborValue.value as number) - 1;
+      return String(negValue);
+    case 2: // ByteString
+      const bytes = cborValue.value as Uint8Array;
+      const hexStr = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+      return `h'${hexStr}'`;
+    case 3: // Text
+      return `"${cborValue.value}"`;
+    case 4: // Array
+      const items = cborValue.value.map((item: any) => formatAsDisplay(item));
+      return `[${items.join(', ')}]`;
+    case 5: // Map
+      const map = cborValue.value as CborMap;
+      if (map && map.entries) {
+        const entries = map.entries.map((entry: any) =>
+          `${formatAsDisplay(entry.key)}: ${formatAsDisplay(entry.value)}`
+        );
+        return `{${entries.join(', ')}}`;
+      }
+      return '{}';
+    case 6: // Tagged - use tag NAME if available, otherwise number
+      const tagValue = cborValue.tag;
+      const { getGlobalTagsStore } = require('../src/tags-store');
+      const store = getGlobalTagsStore();
+      const tagName = store.nameForValue(tagValue); // Returns name or number string
+      const content = formatAsDisplay(cborValue.value);
+      return `${tagName}(${content})`;
+    case 7: // Simple
+      const simple = cborValue.value;
+      if (typeof simple === 'object' && simple !== null && 'type' in simple) {
+        switch (simple.type) {
+          case 'True':
+            return 'true';
+          case 'False':
+            return 'false';
+          case 'Null':
+            return 'null';
+          case 'Float':
+            return String(simple.value);
+        }
+      }
+      return String(simple);
+  }
+  return String(cborValue);
 }
 
 // Helper function to get debug description (matches Rust's format!("{:?}", cbor))
@@ -47,8 +108,8 @@ function generateDebugDescription(cborValue: any): string {
 
     case 1: // Negative
       const negValue = typeof cborValue.value === 'bigint'
-        ? -cborValue.value - 1n
-        : -cborValue.value - 1;
+        ? -(cborValue.value as bigint) - 1n
+        : -(cborValue.value as number) - 1;
       return `negative(${negValue})`;
 
     case 2: // ByteString
@@ -73,7 +134,11 @@ function generateDebugDescription(cborValue: any): string {
     case 6: // Tagged
       const tagValue = cborValue.tag;
       const content = generateDebugDescription(cborValue.value);
-      return `tagged(${tagValue}, ${content})`;
+      // Look up tag name from the global tag store for debug output
+      const { getGlobalTagsStore } = require('../src/tags-store');
+      const store = getGlobalTagsStore();
+      const tagName = store.nameForValue(tagValue);
+      return `tagged(${tagName}, ${content})`;
 
     case 7: // Simple
       const simple = cborValue.value;
@@ -98,8 +163,8 @@ function generateDebugDescription(cborValue: any): string {
 // Helper function to get diagnostic output (matches Rust's cbor.diagnostic())
 function cborDiagnostic(value: any): string {
   const cborValue = cbor(value);
-  // Return pretty-printed diagnostic notation
-  return diagnosticPretty(cborValue);
+  // Use library's diagnostic function (flat output)
+  return diagnostic(cborValue);
 }
 
 // Generate pretty-printed diagnostic notation
@@ -117,8 +182,8 @@ function diagnosticPretty(cborValue: any, indent = 0): string {
 
     case 1: // Negative
       const negValue = typeof cborValue.value === 'bigint'
-        ? -cborValue.value - 1n
-        : -cborValue.value - 1;
+        ? -(cborValue.value as bigint) - 1n
+        : -(cborValue.value as number) - 1;
       return String(negValue);
 
     case 2: // ByteString

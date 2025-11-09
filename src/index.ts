@@ -30,7 +30,9 @@ export {
 } from './simple';
 
 // Encoding/Decoding
-export { cbor, cborData } from './cbor';
+export { cbor, cborData, CborConvenience } from './cbor';
+// Re-export convenience methods at top level for ease of use
+export { toTaggedValue } from './cbor';
 export { decodeCbor } from './decode';
 
 // Map and Set
@@ -42,6 +44,7 @@ export { Tag } from './tag';
 export { CBORTagged } from './cbor-tagged';
 export { TagsStore, TagsStoreTrait } from './tags-store';
 export * from './tags';
+export { registerTags, registerTagsIn, tagsForValues } from './tags';
 
 // Date utilities
 export { CborDate } from './date';
@@ -51,8 +54,19 @@ export {
   diagnostic,
   diagnosticFlat,
   diagnosticAnnotated,
+  diagnosticOpt,
+  summary,
   DiagFormatOpts
 } from './diag';
+
+// Hex formatting
+export {
+  hex,
+  hexAnnotated,
+  hexToBytes,
+  bytesToHex,
+  HexFormatOpts
+} from './dump';
 
 // Walk/Traversal functionality
 export {

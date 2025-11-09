@@ -234,6 +234,8 @@ export function cbor(value: Cbor | any): Cbor {
     return { isCbor: true, type: MajorType.Map, value: value };
   } else if (value instanceof Map) {
     return { isCbor: true, type: MajorType.Map, value: new CborMap(value) };
+  } else if ('taggedCbor' in value && typeof value.taggedCbor === 'function') {
+    return value.taggedCbor();
   } else if ('toCbor' in value && typeof value.toCbor === 'function') {
     return value.toCbor();
   } else if (typeof value === 'object' && value !== null) {
@@ -590,3 +592,6 @@ export namespace CborConvenience {
     return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: NaN } };
   }
 }
+
+// Re-export commonly used convenience functions at top level for easier access
+export const toTaggedValue = CborConvenience.toTaggedValue;
