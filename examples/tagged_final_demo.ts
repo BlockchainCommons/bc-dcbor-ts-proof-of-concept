@@ -8,7 +8,7 @@
  */
 
 import { CborMap } from '../src/map';
-import { cbor } from '../src/encode';
+import { cbor } from '../src/cbor';
 import { walk, WalkElement } from '../src/walk';
 import { diagnostic, diagnosticFlat } from '../src/diag';
 import { MajorType } from '../src/cbor';

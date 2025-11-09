@@ -7,7 +7,7 @@
  * Port of: bc-dcbor-rust/examples/debug_stop.rs
  */
 
-import { cbor } from '../src/encode';
+import { cbor } from '../src/cbor';
 import { walk, EdgeType, WalkElement } from '../src/walk';
 import { diagnosticFlat } from '../src/diag';
 import { MajorType } from '../src/cbor';
