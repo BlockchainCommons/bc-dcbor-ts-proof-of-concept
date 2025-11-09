@@ -1,291 +1,102 @@
 /**
- * Interfaces for types that can be encoded/decoded with CBOR tags.
+ * Base trait for types that have associated CBOR tags.
  *
- * These interfaces provide a trait-like system for TypeScript types
- * to declare their associated CBOR tags and encoding/decoding behavior.
+ * CBOR allows values to be "tagged" with semantic information using tag
+ * numbers. The dCBOR library provides a set of interfaces for working with tagged
+ * values in a type-safe manner.
+ *
+ * Tags in CBOR provide additional context about how a value should be
+ * interpreted. For example, tag 1 is used for dates, indicating the value is a
+ * timestamp.
+ *
+ * This interface system allows TypeScript types to define their associated CBOR tags
+ * and provide serialization/deserialization logic specifically for tagged
+ * values.
+ *
+ * This file exists for 1:1 correspondence with Rust's cbor_tagged.rs.
  *
  * @module cbor-tagged
  */
 
-import { Cbor, MajorType, CborTaggedType } from './cbor';
 import { Tag } from './tag';
 
 /**
  * Interface for types that have associated CBOR tags.
  *
- * Implement this interface to declare which tags are associated
- * with your type.
+ * In CBOR, tags provide semantic information about how to interpret data
+ * items. This interface defines which CBOR tag(s) are associated with a particular
+ * TypeScript type.
+ *
+ * Implementing this interface is a prerequisite for implementing
+ * `CBORTaggedEncodable` and `CBORTaggedDecodable`.
+ *
+ * ## Multiple Tags for Backward Compatibility
+ *
+ * The `cborTags()` method returns an array of tags, enabling support for
+ * backward compatibility with older tag versions:
+ *
+ * - **When encoding**: Only the first tag in the array is used for
+ *   serialization
+ * - **When decoding**: Any of the tags in the array will be accepted
+ *
+ * This design solves several real-world problems:
+ *
+ * 1. **IANA Registration Simplification**: If you initially choose a tag in
+ *    the Specification Required range (24-32767) and later want to move to the
+ *    simpler First Come First Served range (32768+), you can migrate while
+ *    maintaining compatibility with existing data.
+ *
+ * 2. **Protocol Evolution**: As your protocol evolves, you can introduce new
+ *    preferred tags while still supporting data encoded with older tags.
+ *
+ * 3. **Versioning**: Different tags can represent different versions of your
+ *    data format while sharing the same TypeScript type for handling.
+ *
+ * @example
+ * ```typescript
+ * // Single tag
+ * class Date implements CBORTagged {
+ *   cborTags(): Tag[] {
+ *     return [createTag(1, 'date')];
+ *   }
+ * }
+ *
+ * // Multiple tags for backward compatibility
+ * class Seed implements CBORTagged {
+ *   cborTags(): Tag[] {
+ *     return [
+ *       createTag(40300, 'seed'),  // Primary tag (used for encoding)
+ *       createTag(300, 'seed-legacy'), // Legacy tag (accepted for decoding)
+ *     ];
+ *   }
+ * }
+ * ```
  */
 export interface CBORTagged {
   /**
-   * Get the CBOR tags associated with this type.
+   * Returns the CBOR tags associated with this type.
    *
-   * @returns Array of tags (usually one, but can be multiple)
+   * This method should return an array of tags in order of preference:
    *
-   * @example
-   * ```typescript
-   * class MyType implements CBORTagged {
-   *   cborTags(): Tag[] {
-   *     return [createTag(12345, 'myType')];
-   *   }
-   * }
-   * ```
+   * - The first tag in the array is the "preferred" tag and will be used
+   *   when encoding values of this type via
+   *   `CBORTaggedEncodable.taggedCbor()`.
+   *
+   * - All tags in the array are considered equivalent for decoding. When
+   *   `CBORTaggedDecodable.fromTaggedCbor()` is called, any tag in this
+   *   array will be accepted as valid for this type.
+   *
+   * This design enables backward compatibility: you can introduce a new tag
+   * (placed first in the array) while still supporting older tags for
+   * decoding.
+   *
+   * For standard CBOR tags, you can use predefined tag constants from the
+   * `tags` module, or create custom tags with `createTag()`.
    */
   cborTags(): Tag[];
 }
 
-/**
- * Interface for types that can be encoded as tagged CBOR values.
- *
- * Implement this to provide custom CBOR encoding with tags.
- */
-export interface CBORTaggedEncodable extends CBORTagged {
-  /**
-   * Encode this value as CBOR without the tag wrapper.
-   *
-   * @returns The untagged CBOR representation
-   *
-   * @example
-   * ```typescript
-   * class Point implements CBORTaggedEncodable {
-   *   constructor(public x: number, public y: number) {}
-   *
-   *   cborTags(): Tag[] {
-   *     return [createTag(9999, 'point')];
-   *   }
-   *
-   *   untaggedCbor(): Cbor {
-   *     return cbor([this.x, this.y]);
-   *   }
-   *
-   *   taggedCbor(): Cbor {
-   *     return createTaggedCbor(this);
-   *   }
-   * }
-   * ```
-   */
-  untaggedCbor(): Cbor;
-
-  /**
-   * Encode this value as tagged CBOR.
-   *
-   * Default implementation wraps untaggedCbor() with the first tag.
-   *
-   * @returns The tagged CBOR representation
-   */
-  taggedCbor(): Cbor;
-}
-
-/**
- * Interface for types that can be decoded from tagged CBOR values.
- */
-export interface CBORTaggedDecodable<T> extends CBORTagged {
-  /**
-   * Decode from untagged CBOR.
-   *
-   * @param cbor - The untagged CBOR value
-   * @returns Instance of this type
-   *
-   * @example
-   * ```typescript
-   * class Point implements CBORTaggedDecodable<Point> {
-   *   constructor(public x: number = 0, public y: number = 0) {}
-   *
-   *   cborTags(): Tag[] {
-   *     return [createTag(9999, 'point')];
-   *   }
-   *
-   *   fromUntaggedCbor(cbor: Cbor): Point {
-   *     if (cbor.type !== MajorType.Array || cbor.value.length !== 2) {
-   *       throw new Error('Expected array with 2 elements');
-   *     }
-   *     const x = extractCbor(cbor.value[0]) as number;
-   *     const y = extractCbor(cbor.value[1]) as number;
-   *     return new Point(x, y);
-   *   }
-   *
-   *   fromTaggedCbor(cbor: Cbor): Point {
-   *     if (cbor.type !== MajorType.Tagged) {
-   *       throw new Error('Expected tagged value');
-   *     }
-   *     return this.fromUntaggedCbor(cbor.value);
-   *   }
-   * }
-   * ```
-   */
-  fromUntaggedCbor(cbor: Cbor): T;
-
-  /**
-   * Decode from tagged CBOR.
-   *
-   * Default implementation validates the tag and calls fromUntaggedCbor().
-   *
-   * @param cbor - The tagged CBOR value
-   * @returns Instance of this type
-   */
-  fromTaggedCbor(cbor: Cbor): T;
-}
-
-/**
- * Combined interface for types that can both encode and decode with tags.
- */
-export interface CBORTaggedCodable<T> extends CBORTaggedEncodable, CBORTaggedDecodable<T> {}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Create a tagged CBOR value from an encodable object.
- *
- * Uses the first tag from cborTags().
- *
- * @param encodable - Object that can be encoded with tags
- * @returns Tagged CBOR value
- * @throws Error if no tags are defined
- *
- * @example
- * ```typescript
- * const point = new Point(10, 20);
- * const tagged = createTaggedCbor(point);
- * // Returns: { type: MajorType.Tagged, tag: 9999, value: [10, 20] }
- * ```
- */
-export function createTaggedCbor(encodable: CBORTaggedEncodable): Cbor {
-  const tags = encodable.cborTags();
-  if (tags.length === 0) {
-    throw new Error('No tags defined for this type');
-  }
-
-  const tag = tags[0];
-  const untagged = encodable.untaggedCbor();
-
-  const result: CborTaggedType = {
-    isCbor: true,
-    type: MajorType.Tagged,
-    tag: tag.value,
-    value: untagged
-  };
-
-  return result;
-}
-
-/**
- * Validate that a CBOR value has one of the expected tags.
- *
- * @param cbor - The CBOR value to check
- * @param expectedTags - Array of valid tags
- * @returns The tag value if valid
- * @throws Error if the value is not tagged or has an unexpected tag
- *
- * @example
- * ```typescript
- * const tags = [createTag(1, 'date')];
- * const tagValue = validateTag(cborValue, tags);
- * ```
- */
-export function validateTag(cbor: Cbor, expectedTags: Tag[]): Tag {
-  if (cbor.type !== MajorType.Tagged) {
-    throw new Error('Expected tagged CBOR value');
-  }
-
-  const expectedValues = expectedTags.map(t => t.value);
-  const tagValue = cbor.tag;
-
-  if (!expectedValues.some(v => v === tagValue)) {
-    const expectedStr = expectedValues.join(' or ');
-    throw new Error(
-      `Expected tag ${expectedStr}, got ${tagValue}`
-    );
-  }
-
-  // Find and return the matching tag
-  const matchingTag = expectedTags.find(t => t.value === tagValue);
-  return matchingTag!;
-}
-
-/**
- * Extract the content from a tagged CBOR value.
- *
- * @param cbor - The tagged CBOR value
- * @returns The untagged content
- * @throws Error if the value is not tagged
- *
- * @example
- * ```typescript
- * const content = extractTaggedContent(taggedValue);
- * ```
- */
-export function extractTaggedContent(cbor: Cbor): Cbor {
-  if (cbor.type !== MajorType.Tagged) {
-    throw new Error('Expected tagged CBOR value');
-  }
-  return cbor.value;
-}
-
-/**
- * Check if a CBOR value is tagged with a specific tag.
- *
- * @param cbor - The CBOR value to check
- * @param tag - The tag to check for
- * @returns true if the value is tagged with the specified tag
- *
- * @example
- * ```typescript
- * if (hasTag(cborValue, createTag(1, 'date'))) {
- *   // Process as date
- * }
- * ```
- */
-export function hasTag(cbor: Cbor, tag: Tag): boolean {
-  return cbor.type === MajorType.Tagged && cbor.tag === tag.value;
-}
-
-/**
- * Get the tag value from a tagged CBOR value.
- *
- * @param cbor - The CBOR value
- * @returns The tag value, or undefined if not tagged
- *
- * @example
- * ```typescript
- * const tagValue = getTagValue(cborValue);
- * if (tagValue === 1) {
- *   // It's a date
- * }
- * ```
- */
-export function getTagValue(cbor: Cbor): number | bigint | undefined {
-  return cbor.type === MajorType.Tagged ? cbor.tag : undefined;
-}
-
-/**
- * Apply default taggedCbor() implementation for encodable types.
- *
- * This is a helper for implementing taggedCbor() method.
- *
- * @param self - The object being encoded
- * @returns Tagged CBOR representation
- */
-export function defaultTaggedCbor(self: CBORTaggedEncodable): Cbor {
-  return createTaggedCbor(self);
-}
-
-/**
- * Apply default fromTaggedCbor() implementation for decodable types.
- *
- * This is a helper for implementing fromTaggedCbor() method.
- *
- * @param self - The object being decoded into
- * @param cbor - The tagged CBOR value
- * @returns Decoded instance
- */
-export function defaultFromTaggedCbor<T>(
-  self: CBORTaggedDecodable<T>,
-  cbor: Cbor
-): T {
-  const expectedTags = self.cborTags();
-  validateTag(cbor, expectedTags);
-  const content = extractTaggedContent(cbor);
-  return self.fromUntaggedCbor(content);
-}
+// Re-export interfaces and functions from separate modules for convenience
+export { CBORTaggedEncodable, createTaggedCbor } from './cbor-tagged-encodable';
+export { CBORTaggedDecodable, validateTag, extractTaggedContent } from './cbor-tagged-decodable';
+export { CBORTaggedCodable } from './cbor-tagged-codable';

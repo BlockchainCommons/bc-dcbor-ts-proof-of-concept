@@ -115,7 +115,7 @@ export {
 
 // Type utilities
 export { asInteger, asUnsigned, asNegative } from './conveniences';
-export { asByteString } from './byte-string';
+export { ByteString } from './byte-string';
 export { asString } from './string';
 export { asArray } from './array';
 export { asBoolean } from './bool-value';

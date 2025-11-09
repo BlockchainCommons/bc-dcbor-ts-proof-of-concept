@@ -1,10 +1,31 @@
 /**
  * Hex dump utilities for CBOR data.
  *
+ * Affordances for viewing the encoded binary representation of CBOR as hexadecimal.
+ * Optionally annotates the output, breaking it up into semantically meaningful lines,
+ * formatting dates, and adding names of known tags.
+ *
  * This file exists for 1:1 correspondence with Rust's dump.rs.
  *
  * @module dump
  */
+
+import { Cbor, MajorType, cborData } from './cbor';
+import { CborMap } from './map';
+import { encodeVarInt } from './varint';
+import { flanked, sanitized } from './string-util';
+import { TagsStore } from './tags-store';
+import { Tag, createTag } from './tag';
+
+/**
+ * Options for hex formatting.
+ */
+export interface HexFormatOpts {
+  /** Whether to annotate the hex dump with semantic information */
+  annotate?: boolean;
+  /** Optional tags store for resolving tag names */
+  tagsStore?: TagsStore;
+}
 
 /**
  * Convert bytes to hex string.
@@ -28,38 +49,280 @@ export function hexToBytes(hexString: string): Uint8Array {
 }
 
 /**
- * Create a hex dump of binary data with optional annotations.
+ * Returns the encoded hexadecimal representation of CBOR.
  *
- * @param data - Binary data to dump
- * @param annotation - Optional annotation string
- * @returns Hex string representation
+ * @param cbor - CBOR value to convert
+ * @returns Hex string
  */
-export function hexDump(data: Uint8Array, annotation?: string): string {
-  const hex = bytesToHex(data);
-  if (annotation) {
-    return `${hex}  # ${annotation}`;
-  }
-  return hex;
+export function hex(cbor: Cbor): string {
+  return bytesToHex(cborData(cbor));
 }
 
 /**
- * Create a formatted hex dump with line breaks and indentation.
+ * Returns the encoded hexadecimal representation of CBOR with options.
  *
- * @param data - Binary data to dump
- * @param bytesPerLine - Number of bytes per line (default: 16)
- * @param indent - Indentation string (default: empty)
- * @returns Formatted hex dump string
+ * Optionally annotates the output, e.g. breaking the output up into
+ * semantically meaningful lines, formatting dates, and adding names of
+ * known tags.
+ *
+ * @param cbor - CBOR value to convert
+ * @param opts - Formatting options
+ * @returns Hex string (possibly annotated)
  */
-export function hexDumpFormatted(
-  data: Uint8Array,
-  bytesPerLine: number = 16,
-  indent: string = ''
-): string {
-  const lines: string[] = [];
-  for (let i = 0; i < data.length; i += bytesPerLine) {
-    const chunk = data.slice(i, Math.min(i + bytesPerLine, data.length));
-    const hex = bytesToHex(chunk);
-    lines.push(`${indent}${hex}`);
+export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
+  if (!opts.annotate) {
+    return hex(cbor);
   }
+
+  const items = dumpItems(cbor, 0, opts);
+  const noteColumn = items.reduce((largest, item) => {
+    return Math.max(largest, item.formatFirstColumn().length);
+  }, 0);
+
+  // Round up to nearest multiple of 4
+  const roundedNoteColumn = ((noteColumn + 4) & ~3) - 1;
+
+  const lines = items.map(item => item.format(roundedNoteColumn));
   return lines.join('\n');
+}
+
+/**
+ * Returns the encoded hexadecimal representation of CBOR, with annotations.
+ *
+ * @param cbor - CBOR value to convert
+ * @param tagsStore - Optional tags store for tag name resolution
+ * @returns Annotated hex string
+ */
+export function hexAnnotated(cbor: Cbor, tagsStore?: TagsStore): string {
+  return hexOpt(cbor, { annotate: true, tagsStore });
+}
+
+/**
+ * Internal structure for dump items.
+ */
+class DumpItem {
+  constructor(
+    public level: number,
+    public data: Uint8Array[],
+    public note?: string
+  ) {}
+
+  format(noteColumn: number): string {
+    const column1 = this.formatFirstColumn();
+    let column2 = '';
+    let padding = '';
+
+    if (this.note) {
+      const paddingCount = Math.max(
+        1,
+        Math.min(39, noteColumn) - column1.length + 1
+      );
+      padding = ' '.repeat(paddingCount);
+      column2 = `# ${this.note}`;
+    }
+
+    return column1 + padding + column2;
+  }
+
+  formatFirstColumn(): string {
+    const indent = ' '.repeat(this.level * 4);
+    const hexParts = this.data
+      .map(bytesToHex)
+      .filter(x => x.length > 0);
+    const hexStr = hexParts.join(' ');
+    return indent + hexStr;
+  }
+}
+
+/**
+ * Generate dump items for a CBOR value (recursive).
+ */
+function dumpItems(
+  cbor: Cbor,
+  level: number,
+  opts: HexFormatOpts
+): DumpItem[] {
+  const items: DumpItem[] = [];
+
+  switch (cbor.type) {
+    case MajorType.Unsigned: {
+      const data = cborData(cbor);
+      items.push(new DumpItem(
+        level,
+        [data],
+        `unsigned(${cbor.value})`
+      ));
+      break;
+    }
+
+    case MajorType.Negative: {
+      const data = cborData(cbor);
+      const actualValue = typeof cbor.value === 'bigint'
+        ? -1n - cbor.value
+        : -1 - cbor.value;
+      items.push(new DumpItem(
+        level,
+        [data],
+        `negative(${actualValue})`
+      ));
+      break;
+    }
+
+    case MajorType.ByteString: {
+      const bytes = cbor.value as Uint8Array;
+      const header = encodeVarInt(bytes.length, MajorType.ByteString);
+      items.push(new DumpItem(
+        level,
+        [header],
+        `bytes(${bytes.length})`
+      ));
+
+      if (bytes.length > 0) {
+        let note: string | undefined = undefined;
+        // Try to decode as UTF-8 string for annotation
+        try {
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+          const sanitizedText = sanitized(text);
+          if (sanitizedText) {
+            note = flanked(sanitizedText, '"', '"');
+          }
+        } catch {
+          // Not valid UTF-8, no annotation
+        }
+
+        items.push(new DumpItem(
+          level + 1,
+          [bytes],
+          note
+        ));
+      }
+      break;
+    }
+
+    case MajorType.Text: {
+      const text = cbor.value as string;
+      const utf8Data = new TextEncoder().encode(text);
+      const header = encodeVarInt(utf8Data.length, MajorType.Text);
+      const headerData = [
+        new Uint8Array([header[0]]),
+        header.slice(1)
+      ];
+
+      items.push(new DumpItem(
+        level,
+        headerData,
+        `text(${utf8Data.length})`
+      ));
+
+      items.push(new DumpItem(
+        level + 1,
+        [utf8Data],
+        flanked(text, '"', '"')
+      ));
+      break;
+    }
+
+    case MajorType.Array: {
+      const array = cbor.value as Cbor[];
+      const header = encodeVarInt(array.length, MajorType.Array);
+      const headerData = [
+        new Uint8Array([header[0]]),
+        header.slice(1)
+      ];
+
+      items.push(new DumpItem(
+        level,
+        headerData,
+        `array(${array.length})`
+      ));
+
+      for (const item of array) {
+        items.push(...dumpItems(item, level + 1, opts));
+      }
+      break;
+    }
+
+    case MajorType.Map: {
+      const map = cbor.value as CborMap;
+      const header = encodeVarInt(map.size, MajorType.Map);
+      const headerData = [
+        new Uint8Array([header[0]]),
+        header.slice(1)
+      ];
+
+      items.push(new DumpItem(
+        level,
+        headerData,
+        `map(${map.size})`
+      ));
+
+      for (const entry of map.entries) {
+        items.push(...dumpItems(entry.key, level + 1, opts));
+        items.push(...dumpItems(entry.value, level + 1, opts));
+      }
+      break;
+    }
+
+    case MajorType.Tagged: {
+      const tagValue = cbor.tag!;
+      const header = encodeVarInt(
+        typeof tagValue === 'bigint' ? Number(tagValue) : tagValue,
+        MajorType.Tagged
+      );
+      const headerData = [
+        new Uint8Array([header[0]]),
+        header.slice(1)
+      ];
+
+      const noteComponents: string[] = [`tag(${tagValue})`];
+
+      // Add tag name if tags store is provided
+      if (opts.tagsStore) {
+        const numericTagValue = typeof tagValue === 'bigint' ? Number(tagValue) : tagValue;
+        const tag = createTag(numericTagValue);
+        const tagName = opts.tagsStore.assignedNameForTag(tag);
+        if (tagName) {
+          noteComponents.push(tagName);
+        }
+      }
+
+      const tagNote = noteComponents.join(' ');
+
+      items.push(new DumpItem(
+        level,
+        headerData,
+        tagNote
+      ));
+
+      items.push(...dumpItems(cbor.value, level + 1, opts));
+      break;
+    }
+
+    case MajorType.Simple: {
+      const data = cborData(cbor);
+      const simple = cbor.value;
+      let note: string;
+
+      if (simple.type === 'True') {
+        note = 'true';
+      } else if (simple.type === 'False') {
+        note = 'false';
+      } else if (simple.type === 'Null') {
+        note = 'null';
+      } else if (simple.type === 'Float') {
+        note = `${simple.value}`;
+      } else {
+        note = 'simple';
+      }
+
+      items.push(new DumpItem(
+        level,
+        [data],
+        note
+      ));
+      break;
+    }
+  }
+
+  return items;
 }
