@@ -1,7 +1,7 @@
 import { Cbor, CborNumber, MajorType } from "./cbor";
 import { cborDiagnostic } from "./debug";
 import { decodeCbor } from "./decode";
-import { SimpleValue, isSimpleValue, isSimpleFloat } from "./simple";
+import { isFloat } from "./simple";
 
 export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
   let c: Cbor;
@@ -34,14 +34,14 @@ export function extractCbor(cbor: Cbor | Uint8Array): any | undefined {
     case MajorType.Tagged:
       return c;
     case MajorType.Simple:
-      if (c.value === SimpleValue.True) {
+      if (c.value.type === 'True') {
         return true;
-      } else if (c.value === SimpleValue.False) {
+      } else if (c.value.type === 'False') {
         return false;
-      } else if (c.value === SimpleValue.Null) {
+      } else if (c.value.type === 'Null') {
         return null;
-      } else if (isSimpleFloat(c.value)) {
-        return c.value.float;
+      } else if (isFloat(c.value)) {
+        return c.value.value;
       }
       return c;
   }
@@ -112,8 +112,8 @@ export function getCborNumber(cbor: Cbor): CborNumber | undefined {
         return -cbor.value - 1;
       }
     case MajorType.Simple:
-      if (isSimpleFloat(cbor.value)) {
-        return cbor.value.float;
+      if (cbor.value.type === 'Float') {
+        return cbor.value.value;
       }
   }
 }

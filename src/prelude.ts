@@ -15,7 +15,8 @@
  */
 
 // Core types
-export { Cbor, MajorType, Simple } from './cbor';
+export { Cbor, MajorType } from './cbor';
+export type { Simple } from './simple';
 export type {
   CborUnsignedType,
   CborNegativeType,
@@ -47,9 +48,8 @@ export { CborDate } from './date';
 
 // Tag handling
 export { Tag, createTag, tagsEqual, tagToString } from './tag';
-export { knownTags, knownTagsList } from './tags';
 export { TagsStore, getGlobalTagsStore } from './tags-store';
-export type { TagsStoreOpt, TagsStoreTrait } from './tags-store';
+export type { TagsStoreTrait } from './tags-store';
 
 // Diagnostic formatting
 export { diagnostic, diagnosticAnnotated, diagnosticFlat, diagnosticOpt, summary } from './diag';
@@ -61,12 +61,13 @@ export { walk, EdgeType } from './walk';
 export type { WalkElement, EdgeTypeVariant, Visitor } from './walk';
 
 // Error handling
-export { CBORError } from './error';
+export type { Error, Result } from './error';
+export { Ok, Err, errorMsg, errorToString, throwError } from './error';
 
 // Utilities
 export { bytesToHex, hexToBytes } from './data-utils';
-export { isSimpleFloat } from './simple';
+export { isFloat } from './simple';
 export { numberToBinary, binaryToNumber } from './float';
 
 // Conveniences
-export { isBoolean, isNumber, isString, isArray, isMap, isByteString, isTagged } from './conveniences';
+export { isBoolean, asNumber, asText, isArray, isMap, asBytes, isTagged } from './conveniences';

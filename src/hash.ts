@@ -8,7 +8,7 @@
  */
 
 import { Cbor, MajorType } from './cbor';
-import { isSimpleValue, isSimpleFloat } from './simple';
+import { isFloat } from './simple';
 
 // FNV-1a hash constants for 32-bit
 const FNV_PRIME = 0x01000193;
@@ -176,15 +176,20 @@ export function cborHash(cbor: Cbor): number {
       break;
 
     case MajorType.Simple:
-      if (isSimpleValue(cbor.value)) {
-        // Simple enum values (False, True, Null)
-        hasher.writeByte(cbor.value);
-      } else if (isSimpleFloat(cbor.value)) {
-        // Float values
-        hasher.writeNumber(cbor.value.float);
-      } else if (typeof cbor.value === 'number') {
-        // Other simple values
-        hasher.writeNumber(cbor.value);
+      // Hash discriminant first
+      switch (cbor.value.type) {
+        case 'False':
+          hasher.writeByte(20);
+          break;
+        case 'True':
+          hasher.writeByte(21);
+          break;
+        case 'Null':
+          hasher.writeByte(22);
+          break;
+        case 'Float':
+          hasher.writeNumber(cbor.value.value);
+          break;
       }
       break;
   }

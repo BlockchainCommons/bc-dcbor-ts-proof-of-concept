@@ -5,7 +5,7 @@ function typeBits(t: MajorType): number {
   return t << 5;
 }
 
-export function encodeVarInt(majorType: MajorType, value: CborNumber): Uint8Array {
+export function encodeVarInt(value: CborNumber, majorType: MajorType): Uint8Array {
   // throw an error if the value is negative.
   if (value < 0) {
     throw new Error("Value out of range");

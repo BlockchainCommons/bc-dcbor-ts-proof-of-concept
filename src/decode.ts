@@ -174,27 +174,26 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
         case 3: {
           const f = binary16ToNumber(new Uint8Array(data.buffer, data.byteOffset + 1, 2));
           checkCanonicalEncoding(f, new Uint8Array(data.buffer, data.byteOffset, varIntLen));
-          return { cbor: { isCbor: true, type: MajorType.Simple, value: { float: f } }, len: varIntLen };
+          return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: f } }, len: varIntLen };
         } case 5: {
           const f = binary32ToNumber(new Uint8Array(data.buffer, data.byteOffset + 1, 4));
           checkCanonicalEncoding(f, new Uint8Array(data.buffer, data.byteOffset, varIntLen));
-          return { cbor: { isCbor: true, type: MajorType.Simple, value: { float: f } }, len: varIntLen };
+          return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: f } }, len: varIntLen };
         } case 9: {
           const f = binary64ToNumber(new Uint8Array(data.buffer, data.byteOffset + 1, 8));
           checkCanonicalEncoding(f, new Uint8Array(data.buffer, data.byteOffset, varIntLen));
-          return { cbor: { isCbor: true, type: MajorType.Simple, value: { float: f } }, len: varIntLen };
+          return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: f } }, len: varIntLen };
         } default:
           switch (value) {
             case 20:
-              return { cbor: Cbor.False, len: varIntLen };
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'False' } }, len: varIntLen };
             case 21:
-              return { cbor: Cbor.True, len: varIntLen };
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'True' } }, len: varIntLen };
             case 22:
-              return { cbor: Cbor.Null, len: varIntLen };
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Null' } }, len: varIntLen };
             default:
-              // Other simple values - stored as number for compatibility
-              // Per dCBOR spec, only false/true/null/floats are valid, but we handle others for compatibility
-              return { cbor: { isCbor: true, type: MajorType.Simple, value: Number(value) }, len: varIntLen };
+              // Per dCBOR spec, only false/true/null/floats are valid
+              throw new Error("Invalid simple value");
           }
       }
   }

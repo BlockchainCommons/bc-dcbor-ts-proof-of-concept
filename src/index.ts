@@ -2,7 +2,7 @@
  * BC-DCBOR TypeScript Library
  *
  * A TypeScript implementation of Blockchain Commons' Deterministic CBOR (dCBOR).
- * Port of bc-dcbor-rust.
+ * 1:1 port of bc-dcbor-rust.
  *
  * @module bc-dcbor
  */
@@ -24,24 +24,22 @@ export {
 // Simple value types
 export {
   Simple,
-  SimpleValue,
-  isSimpleValue,
-  isSimpleFloat,
   simpleName,
   isFloat,
   isNaN,
 } from './simple';
 
-export { cbor } from './encode';
-export { decode } from './decode';
+// Encoding/Decoding
+export { cbor, cborData } from './encode';
+export { decodeCbor } from './decode';
 
 // Map and Set
-export { CborMap, CborMapEntry } from './map';
+export { CborMap, MapEntry } from './map';
 export { CborSet } from './set';
 
 // Tags and Tagged values
-export { Tag, TagValue } from './tag';
-export { CborTagged } from './cbor-tagged';
+export { Tag } from './tag';
+export { CBORTagged } from './cbor-tagged';
 export { TagsStore, TagsStoreTrait } from './tags-store';
 export * from './tags';
 
@@ -52,11 +50,9 @@ export { CborDate } from './date';
 export {
   diagnostic,
   diagnosticFlat,
-  DiagnosticOptions
+  diagnosticAnnotated,
+  DiagFormatOpts
 } from './diag';
-
-// Hash functions
-export { cborHash } from './hash';
 
 // Walk/Traversal functionality
 export {
@@ -78,30 +74,48 @@ export {
 
 // Codable interfaces
 export {
-  CborCodable,
-  CborEncodable,
-  CborDecodable
+  CBORCodable,
+  CBOREncodable,
+  CBORDecodable
 } from './cbor-codable';
 
-// Error types
+// Error types (matches Rust's Error enum)
 export {
-  CborError,
-  DecodeError,
-  EncodeError
+  Error,
+  Result,
+  Ok,
+  Err,
+  errorMsg,
+  errorToString,
+  throwError
 } from './error';
 
 // Convenience functions
 export * from './conveniences';
 
 // Float utilities
-export { encodeFloat } from './float';
-
-// Data utilities
-export { toHex, fromHex } from './data-utils';
+export { f64CborData, hasFractionalPart } from './float';
 
 // Varint utilities
 export {
-  encodeVarint,
-  decodeVarint,
-  varintEncodedLength
+  encodeVarInt,
+  decodeVarInt,
+  decodeVarIntData
 } from './varint';
+
+// Exact type extraction
+export {
+  exactUnsigned,
+  exactNegative,
+  exactInteger,
+  exactString,
+  exactBytes,
+  exactArray
+} from './exact';
+
+// Type utilities
+export { asInteger, asUnsigned, asNegative } from './conveniences';
+export { asByteString } from './byte-string';
+export { asString } from './string';
+export { asArray } from './array';
+export { asBoolean } from './bool-value';

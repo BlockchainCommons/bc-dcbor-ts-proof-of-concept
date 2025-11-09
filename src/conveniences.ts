@@ -9,7 +9,7 @@
 
 import { Cbor, MajorType, CborNumber } from './cbor';
 import { CborMap } from './map';
-import { isSimpleFloat } from './simple';
+import { isFloat as isSimpleFloat } from './simple';
 
 // ============================================================================
 // Type Guards
@@ -122,7 +122,7 @@ export function isBoolean(cbor: Cbor): boolean {
   if (cbor.type !== MajorType.Simple) {
     return false;
   }
-  return cbor.value === 0x14 || cbor.value === 0x15; // false or true
+  return cbor.value.type === 'False' || cbor.value.type === 'True';
 }
 
 /**
@@ -135,7 +135,7 @@ export function isNull(cbor: Cbor): boolean {
   if (cbor.type !== MajorType.Simple) {
     return false;
   }
-  return cbor.value === 0x16; // null
+  return cbor.value.type === 'Null';
 }
 
 /**
@@ -268,10 +268,10 @@ export function asBoolean(cbor: Cbor): boolean | undefined {
   if (cbor.type !== MajorType.Simple) {
     return undefined;
   }
-  if (cbor.value === 0x15) {
+  if (cbor.value.type === 'True') {
     return true;
   }
-  if (cbor.value === 0x14) {
+  if (cbor.value.type === 'False') {
     return false;
   }
   return undefined;
@@ -287,8 +287,9 @@ export function asFloat(cbor: Cbor): number | undefined {
   if (cbor.type !== MajorType.Simple) {
     return undefined;
   }
-  if (isSimpleFloat(cbor.value)) {
-    return cbor.value.float;
+  const simple = cbor.value;
+  if (isSimpleFloat(simple)) {
+    return simple.value;
   }
   return undefined;
 }
@@ -311,8 +312,11 @@ export function asNumber(cbor: Cbor): CborNumber | undefined {
       return -cbor.value - 1;
     }
   }
-  if (cbor.type === MajorType.Simple && isSimpleFloat(cbor.value)) {
-    return cbor.value.float;
+  if (cbor.type === MajorType.Simple) {
+    const simple = cbor.value;
+    if (isSimpleFloat(simple)) {
+      return simple.value;
+    }
   }
   return undefined;
 }

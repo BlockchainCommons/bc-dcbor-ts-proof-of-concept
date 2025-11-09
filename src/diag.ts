@@ -11,7 +11,7 @@
  */
 
 import { Cbor, MajorType } from './cbor';
-import { isSimpleFloat } from './simple';
+import { isFloat } from './simple';
 import { bytesToHex } from './data-utils';
 import { TagsStore, getGlobalTagsStore } from './tags-store';
 import { Tag } from './tag';
@@ -107,7 +107,7 @@ export function diagnosticOpt(cbor: Cbor, opts?: DiagFormatOpts): string {
  * Format CBOR value as standard diagnostic notation.
  *
  * @param cbor - CBOR value to format
- * @returns Diagnostic string
+ * @returns Diagnostic string (flat/single-line format)
  *
  * @example
  * ```typescript
@@ -116,7 +116,7 @@ export function diagnosticOpt(cbor: Cbor, opts?: DiagFormatOpts): string {
  * ```
  */
 export function diagnostic(cbor: Cbor): string {
-  return diagnosticOpt(cbor);
+  return diagnosticOpt(cbor, { flat: true });
 }
 
 /**
@@ -125,7 +125,7 @@ export function diagnostic(cbor: Cbor): string {
  * Tagged values are displayed with their registered names instead of numeric tags.
  *
  * @param cbor - CBOR value to format
- * @returns Annotated diagnostic string
+ * @returns Annotated diagnostic string (flat/single-line format)
  *
  * @example
  * ```typescript
@@ -135,7 +135,7 @@ export function diagnostic(cbor: Cbor): string {
  * ```
  */
 export function diagnosticAnnotated(cbor: Cbor): string {
-  return diagnosticOpt(cbor, { annotate: true });
+  return diagnosticOpt(cbor, { annotate: true, flat: true });
 }
 
 /**
@@ -344,7 +344,21 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
  * Format simple value.
  */
 function formatSimple(value: any): string {
-  // CBOR simple values: false=0x14 (20), true=0x15 (21), null=0x16 (22)
+  // Handle discriminated union
+  if (typeof value === 'object' && value !== null && 'type' in value) {
+    switch (value.type) {
+      case 'True':
+        return 'true';
+      case 'False':
+        return 'false';
+      case 'Null':
+        return 'null';
+      case 'Float':
+        return formatFloat(value.value);
+    }
+  }
+
+  // Legacy numeric values fallback
   if (value === 0x15 || value === 21) {
     return 'true';
   } else if (value === 0x14 || value === 20) {
@@ -353,11 +367,9 @@ function formatSimple(value: any): string {
     return 'null';
   } else if (value === undefined) {
     return 'undefined';
-  } else if (isSimpleFloat(value)) {
-    return formatFloat(value.float);
-  } else {
-    return `simple(${value})`;
   }
+
+  return `simple(${value})`;
 }
 
 /**

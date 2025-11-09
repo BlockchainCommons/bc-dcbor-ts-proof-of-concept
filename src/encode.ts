@@ -1,14 +1,26 @@
+/**
+ * CBOR encoding functions.
+ *
+ * This file exists for 1:1 correspondence with Rust's encoding logic in cbor.rs.
+ *
+ * @module encode
+ */
+
 import { Cbor, MajorType, CborTaggedType, CborArrayType, isCborNumber, CborNumber, isCbor, CborMapType } from "./cbor";
 import { bytesToHex, concatBytes } from "./data-utils";
 import { hasFractionalPart, numberToBinary } from "./float";
 import { CborMap } from "./map";
-import { SimpleValue, isSimpleValue, isSimpleFloat } from "./simple";
+import { Simple, simpleCborData } from "./simple";
 import { encodeBitPattern, encodeVarInt } from "./varint";
 
 export interface ToCbor {
   toCbor(): Cbor;
 }
 
+/**
+ * Convert any value to a CBOR representation.
+ * Matches Rust's `From` trait implementations for CBOR.
+ */
 export function cbor(value: Cbor | any): Cbor {
   if (isCbor(value)) {
     return value;
@@ -16,13 +28,13 @@ export function cbor(value: Cbor | any): Cbor {
 
   if (isCborNumber(value)) {
     if (typeof value === 'number' && isNaN(value)) {
-      return { isCbor: true, type: MajorType.Simple, value: { float: NaN } };
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: NaN } };
     } else if (typeof value === 'number' && hasFractionalPart(value)) {
-      return { isCbor: true, type: MajorType.Simple, value: { float: value } };
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: value } };
     } else if (value == Infinity) {
-      return { isCbor: true, type: MajorType.Simple, value: { float: Infinity } };
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: Infinity } };
     } else if (value == -Infinity) {
-      return { isCbor: true, type: MajorType.Simple, value: { float: -Infinity } };
+      return { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: -Infinity } };
     } else if (value < 0) {
       // Store the magnitude to encode, matching Rust's representation
       // For a negative value n, CBOR encodes it as -1-n, so we store -n-1
@@ -40,11 +52,11 @@ export function cbor(value: Cbor | any): Cbor {
     const normalized = value.normalize('NFC');
     return { isCbor: true, type: MajorType.Text, value: normalized };
   } else if (value === null) {
-    return Cbor.Null;
+    return { isCbor: true, type: MajorType.Simple, value: { type: 'Null' } };
   } else if (value === true) {
-    return Cbor.True;
+    return { isCbor: true, type: MajorType.Simple, value: { type: 'True' } };
   } else if (value === false) {
-    return Cbor.False;
+    return { isCbor: true, type: MajorType.Simple, value: { type: 'False' } };
   } else if (Array.isArray(value)) {
     return { isCbor: true, type: MajorType.Array, value: value.map(cbor) };
   } else if (value instanceof Uint8Array) {
@@ -71,60 +83,61 @@ export function cborHex(value: any): string {
   return bytesToHex(cborData(value));
 }
 
+/**
+ * Encode a CBOR value to binary data.
+ * Matches Rust's `CBOR::to_cbor_data()` method.
+ */
 export function cborData(value: any): Uint8Array {
   const c = cbor(value);
   switch (c.type) {
     case MajorType.Unsigned: {
-      return encodeVarInt(MajorType.Unsigned, c.value);
-    } case MajorType.Negative: {
+      return encodeVarInt(c.value, MajorType.Unsigned);
+    }
+    case MajorType.Negative: {
       // Value is already stored as the magnitude to encode (matching Rust)
-      return encodeVarInt(MajorType.Negative, c.value);
-      break;
-    } case MajorType.ByteString: {
+      return encodeVarInt(c.value, MajorType.Negative);
+    }
+    case MajorType.ByteString: {
       if (c.value instanceof Uint8Array) {
-        const lengthBytes = encodeVarInt(MajorType.ByteString, c.value.length);
+        const lengthBytes = encodeVarInt(c.value.length, MajorType.ByteString);
         return new Uint8Array([...lengthBytes, ...c.value]);
       }
       break;
-    } case MajorType.Text: {
+    }
+    case MajorType.Text: {
       if (typeof c.value === 'string') {
         const utf8Bytes = new TextEncoder().encode(c.value);
-        const lengthBytes = encodeVarInt(MajorType.Text, utf8Bytes.length);
+        const lengthBytes = encodeVarInt(utf8Bytes.length, MajorType.Text);
         return new Uint8Array([...lengthBytes, ...utf8Bytes]);
       }
       break;
-    } case MajorType.Tagged: {
+    }
+    case MajorType.Tagged: {
       const tagged = c as CborTaggedType;
       if (typeof tagged.tag === 'bigint' || typeof tagged.tag === 'number') {
-        const tagBytes = encodeVarInt(MajorType.Tagged, tagged.tag);
+        const tagBytes = encodeVarInt(tagged.tag, MajorType.Tagged);
         const valueBytes = cborData(tagged.value);
         return new Uint8Array([...tagBytes, ...valueBytes]);
       }
       break;
-    } case MajorType.Simple: {
-      if (isSimpleValue(c.value)) {
-        // Simple enum values (False, True, Null) are already the correct values
-        return encodeVarInt(MajorType.Simple, c.value);
-      } else if (isSimpleFloat(c.value)) {
-        // Float values are encoded using floating point encoding
-        return encodeBitPattern(MajorType.Simple, numberToBinary(c.value.float));
-      } else if (typeof c.value === 'number') {
-        // Other simple values stored as raw numbers
-        return encodeVarInt(MajorType.Simple, c.value);
-      }
-      break;
-    } case MajorType.Array: {
+    }
+    case MajorType.Simple: {
+      // Use the simpleCborData function from simple.ts
+      return simpleCborData(c.value);
+    }
+    case MajorType.Array: {
       const array = c as CborArrayType;
       const arrayBytes = array.value.map(cborData);
-      const flatArrayBytes = concatBytes(arrayBytes)
-      const lengthBytes = encodeVarInt(MajorType.Array, array.value.length);
+      const flatArrayBytes = concatBytes(arrayBytes);
+      const lengthBytes = encodeVarInt(array.value.length, MajorType.Array);
       return new Uint8Array([...lengthBytes, ...flatArrayBytes]);
-    } case MajorType.Map: {
+    }
+    case MajorType.Map: {
       let map = c as CborMapType;
       let entries = map.value.entries;
       const arrayBytes = entries.map(({key, value}) => concatBytes([cborData(key), cborData(value)]));
-      const flatArrayBytes = concatBytes(arrayBytes)
-      const lengthBytes = encodeVarInt(MajorType.Map, entries.length);
+      const flatArrayBytes = concatBytes(arrayBytes);
+      const lengthBytes = encodeVarInt(entries.length, MajorType.Map);
       return new Uint8Array([...lengthBytes, ...flatArrayBytes]);
     }
   }
@@ -141,13 +154,5 @@ export function taggedCbor(tag: CborNumber, value: any): Cbor {
     type: MajorType.Tagged,
     tag: tag,
     value: cbor(value),
-  };
-}
-
-export function simpleCborValue(value: number): Cbor {
-  return {
-    isCbor: true,
-    type: MajorType.Simple,
-    value: value,
   };
 }

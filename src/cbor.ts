@@ -1,5 +1,6 @@
 import { CborMap } from "./map";
-import { Simple, SimpleValue } from "./simple";
+import type { Simple } from "./simple";
+export type { Simple };
 
 export enum MajorType {
   Unsigned = 0,
@@ -44,9 +45,9 @@ export type Cbor = CborUnsignedType |
  */
 export const Cbor = {
   // Static CBOR simple values (matching Rust naming)
-  False: { isCbor: true as const, type: MajorType.Simple as const, value: SimpleValue.False },
-  True: { isCbor: true as const, type: MajorType.Simple as const, value: SimpleValue.True },
-  Null: { isCbor: true as const, type: MajorType.Simple as const, value: SimpleValue.Null },
+  False: { isCbor: true as const, type: MajorType.Simple as const, value: { type: 'False' as const } },
+  True: { isCbor: true as const, type: MajorType.Simple as const, value: { type: 'True' as const } },
+  Null: { isCbor: true as const, type: MajorType.Simple as const, value: { type: 'Null' as const } },
 
   // ============================================================================
   // Convenience Methods (matches Rust CBOR convenience constructors)

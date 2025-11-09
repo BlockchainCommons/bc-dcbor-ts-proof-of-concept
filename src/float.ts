@@ -34,6 +34,16 @@ export function binary16ToNumber(data: Uint8Array): number {
   return byteData.unpack(data, { bits: 16, fp: true, be: true });
 }
 
+/**
+ * Encode an f64 to CBOR bytes.
+ * Matches Rust's f64_cbor_data function.
+ */
+export function f64CborData(n: number): Uint8Array {
+  // Check for numeric reduction to integer first
+  // (implementation will be in encode.ts to avoid circular deps)
+  return numberToBinary(n);
+}
+
 export function numberToBinary(n: number): Uint8Array {
   if (isNaN(n)) {
     return new Uint8Array([0x7e, 0x00]);

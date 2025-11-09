@@ -236,8 +236,8 @@ export class CborDate implements CBORTaggedEncodable, CBORTaggedDecodable<CborDa
         break;
 
       case MajorType.Simple:
-        if (typeof c.value === 'object' && 'float' in c.value) {
-          timestamp = c.value.float;
+        if (c.value.type === 'Float') {
+          timestamp = c.value.value;
         } else {
           throw new Error('Invalid date CBOR: expected numeric value');
         }
