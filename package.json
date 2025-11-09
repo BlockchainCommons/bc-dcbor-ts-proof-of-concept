@@ -8,7 +8,8 @@
     "test-encode": "jest src/encode.spec.ts",
     "test-float": "jest src/float.spec.ts",
     "test-map": "jest src/map.spec.ts",
-    "compile": "tsc"
+    "compile": "tsc",
+    "benchmark": "npm run compile && node scripts/run-benchmark.js"
   },
   "keywords": [],
   "author": "",
