@@ -7,7 +7,7 @@
  */
 
 import { cbor, cborData, Cbor, CborEncodable, toTaggedValue } from '../src/cbor';
-import { diagnostic, diagnosticFlat } from '../src/diag';
+import { diagnosticFlat } from '../src/diag';
 import { decodeCbor } from '../src/decode';
 import { hex } from '../src/dump';
 import { ByteString } from '../src/byte-string';
@@ -31,30 +31,35 @@ function cborDebug(cborValue: Cbor): string {
   switch (cborValue.type) {
     case 0: // Unsigned
       return `unsigned(${cborValue.value})`;
-    case 1: // Negative
+    case 1: { // Negative
       const negValue = typeof cborValue.value === 'bigint'
         ? -(cborValue.value as bigint) - 1n
         : -(cborValue.value as number) - 1;
       return `negative(${negValue})`;
-    case 2: // ByteString
+    }
+    case 2: { // ByteString
       const bytes = cborValue.value as Uint8Array;
       const hexStr = bytesToHex(bytes);
       return `bytes(${hexStr})`;
+    }
     case 3: // Text
       return `text("${cborValue.value}")`;
-    case 4: // Array
+    case 4: { // Array
       const items = (cborValue.value as Cbor[]).map(cborDebug);
       return `array([${items.join(', ')}])`;
-    case 5: // Map
-      const map = cborValue.value as any;
+    }
+    case 5: { // Map
+      const map = cborValue.value as CborMap;
       if (map && map.debug) {
         return map.debug;
       }
       return 'map({})';
-    case 6: // Tagged
+    }
+    case 6: { // Tagged
       const content = cborDebug(cborValue.value as Cbor);
       return `tagged(${cborValue.tag}, ${content})`;
-    case 7: // Simple
+    }
+    case 7: { // Simple
       const simple = cborValue.value;
       if (typeof simple === 'object' && simple !== null && 'type' in simple) {
         switch (simple.type) {
@@ -64,7 +69,7 @@ function cborDebug(cborValue: Cbor): string {
             return 'simple(false)';
           case 'Null':
             return 'simple(null)';
-          case 'Float':
+          case 'Float': {
             // Format float values properly (inf, -inf, NaN)
             const f = simple.value;
             if (isNaN(f)) {
@@ -98,7 +103,7 @@ function bytesToHex(bytes: Uint8Array): string {
 }
 
 /** Assert actual equals expected with detailed output (matches Rust assert_actual_expected!) */
-function assertActualExpected(actual: any, expected: any, message?: string) {
+function assertActualExpected(actual: string, expected: string) {
   if (actual !== expected) {
     console.log(`Actual:\n${actual}`);
     console.log(`Expected:\n${expected}`);
@@ -111,7 +116,7 @@ function assertActualExpected(actual: any, expected: any, message?: string) {
  * Matches Rust's test_cbor function
  */
 function testCbor(
-  value: any,
+  value: CborEncodable,
   expectedDebug: string,
   expectedDisplay: string,
   expectedData: string
@@ -160,7 +165,7 @@ function testCborDecode(
  * Matches Rust's test_cbor_codable function
  */
 function testCborCodable(
-  value: any,
+  value: CborEncodable,
   expectedDebug: string,
   expectedDisplay: string,
   expectedData: string
