@@ -45,6 +45,13 @@ export function cbor(value: Cbor | any): Cbor {
     return { isCbor: true, type: MajorType.Map, value: new CborMap(value) };
   } else if ('toCbor' in value && typeof value.toCbor === 'function') {
     return value.toCbor();
+  } else if (typeof value === 'object' && value !== null) {
+    // Handle plain objects by converting to CborMap
+    const map = new CborMap();
+    for (const [key, val] of Object.entries(value)) {
+      map.set(cbor(key), cbor(val));
+    }
+    return { isCbor: true, type: MajorType.Map, value: map };
   }
 
   throw new Error("Not supported");
