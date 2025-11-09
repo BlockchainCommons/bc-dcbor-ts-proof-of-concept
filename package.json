@@ -4,7 +4,8 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest",
+    "test": "jest --testPathIgnorePatterns=cli.test.ts",
+    "test-cli": "jest cli.test.ts",
     "compile": "tsc",
     "test-examples": "npm run compile && node scripts/test-examples.js",
     "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
