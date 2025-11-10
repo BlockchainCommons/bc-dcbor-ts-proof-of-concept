@@ -1,6 +1,5 @@
-import { Cbor, CborNumber, MajorType } from "./cbor";
-import { areBytesEqual } from "./data-utils";
-import { encodeCbor } from "./encode";
+import { Cbor, CborNumber, MajorType, isCbor, encodeCbor, cborData } from "./cbor";
+import { areBytesEqual } from "./stdlib";
 import { binary16ToNumber, binary32ToNumber, binary64ToNumber } from "./float";
 import { CborMap } from "./map";
 
@@ -8,7 +7,7 @@ export function decodeCbor(data: Uint8Array): Cbor {
   const {cbor, len} = decodeCborInternal(new DataView(data.buffer, data.byteOffset, data.byteLength));
   const remaining = data.length - len;
   if (remaining !== 0) {
-    throw new Error(`Unused data: ${remaining}`);
+    throw new Error(`Extra bytes after CBOR: ${remaining}`);
   }
   return cbor;
 }
@@ -43,7 +42,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
     throw new Error("Underrun");
   }
 
-  const { majorType, headerValue } = parseHeader(at(data, 0));
+  const header = at(data, 0);
+  const { majorType, headerValue } = parseHeader(header);
   const dataRemaining = data.byteLength - 1;
   let value: CborNumber;
   let varIntLen: number;
@@ -64,7 +64,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
       throw new Error("Underrun");
     }
     value = (at(data, 1) << 8 | at(data, 2)) >>> 0;
-    if (value <= 0xFF) {
+    // Floats with header 0xf9 are allowed to have values <= 0xFF
+    if (value <= 0xFF && header !== 0xf9) {
       throw new Error("Non-canonical numeric");
     }
     varIntLen = 3;
@@ -73,7 +74,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
       throw new Error("Underrun");
     }
     value = (at(data, 1) << 24 | at(data, 2) << 16 | at(data, 3) << 8 | at(data, 4)) >>> 0;
-    if (value <= 0xFFFF) {
+    // Floats with header 0xfa are allowed to have values <= 0xFFFF
+    if (value <= 0xFFFF && header !== 0xfa) {
       throw new Error("Non-canonical numeric");
     }
     varIntLen = 5;
@@ -93,7 +95,8 @@ function parseHeaderVarint(data: DataView): { majorType: MajorType, value: CborN
     if (value <= Number.MAX_SAFE_INTEGER) {
       value = Number(value);
     }
-    if (value <= 0xFFFFFFFF) {
+    // Floats with header 0xfb are allowed to have values <= 0xFFFFFFFF
+    if (value <= 0xFFFFFFFF && header !== 0xfb) {
       throw new Error("Non-canonical numeric");
     }
     varIntLen = 9;
@@ -110,31 +113,25 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
   const { majorType, value, varIntLen } = parseHeaderVarint(data);
   switch (majorType) {
     case MajorType.Unsigned: {
+      const cbor: Cbor = { isCbor: true, type: MajorType.Unsigned, value: value };
       const buf = new Uint8Array(data.buffer, data.byteOffset, varIntLen);
-      checkCanonicalEncoding(value, buf);
-      return { cbor: { isCbor: true, type: MajorType.Unsigned, value: value }, len: varIntLen };
+      checkCanonicalEncoding(cbor, buf);
+      return { cbor, len: varIntLen };
     } case MajorType.Negative: {
-      let v: CborNumber;
-      if (typeof value === 'bigint') {
-        if (value == 18446744073709551615n) {
-          v = -9223372036854775808n;
-        } else {
-          v = -value - 1n;
-        }
-      } else {
-        v = -value - 1;
-      }
+      // Store the magnitude as-is, matching Rust's representation
+      // The decoded value is what gets encoded (not the actual negative number)
+      const cbor: Cbor = { isCbor: true, type: MajorType.Negative, value: value };
       const buf = new Uint8Array(data.buffer, data.byteOffset, varIntLen);
-      checkCanonicalEncoding(v, buf);
-      return { cbor: { isCbor: true, type: MajorType.Negative, value: v }, len: varIntLen };
-    } case MajorType.Bytes: {
+      checkCanonicalEncoding(cbor, buf);
+      return { cbor, len: varIntLen };
+    } case MajorType.ByteString: {
       const dataLen = value;
       if (typeof dataLen === 'bigint') {
         throw new Error("Value out of range")
       }
       const buf = parseBytes(from(data, varIntLen), dataLen);
       const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-      return { cbor: { isCbor: true, type: MajorType.Bytes, value: bytes }, len: varIntLen + dataLen };
+      return { cbor: { isCbor: true, type: MajorType.ByteString, value: bytes }, len: varIntLen + dataLen };
     } case MajorType.Text: {
       const textLen = value;
       if (typeof textLen === 'bigint') {
@@ -142,6 +139,11 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
       }
       const textBuf = parseBytes(from(data, varIntLen), textLen);
       const text = new TextDecoder().decode(textBuf);
+      // dCBOR requires all text strings to be in Unicode Normalization Form C (NFC)
+      // Reject any strings that are not already in NFC form
+      if (text.normalize('NFC') !== text) {
+        throw new Error('Text string is not in Unicode Canonical Normalization Form C');
+      }
       return { cbor: { isCbor: true, type: MajorType.Text, value: text }, len: varIntLen + textLen };
     } case MajorType.Array: {
       let pos = varIntLen;
@@ -171,32 +173,35 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
         case 3: {
           const f = binary16ToNumber(new Uint8Array(data.buffer, data.byteOffset + 1, 2));
           checkCanonicalEncoding(f, new Uint8Array(data.buffer, data.byteOffset, varIntLen));
-          return { cbor: { isCbor: true, type: MajorType.Simple, value: { float: f } }, len: varIntLen };
+          return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: f } }, len: varIntLen };
         } case 5: {
           const f = binary32ToNumber(new Uint8Array(data.buffer, data.byteOffset + 1, 4));
           checkCanonicalEncoding(f, new Uint8Array(data.buffer, data.byteOffset, varIntLen));
-          return { cbor: { isCbor: true, type: MajorType.Simple, value: { float: f } }, len: varIntLen };
+          return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: f } }, len: varIntLen };
         } case 9: {
           const f = binary64ToNumber(new Uint8Array(data.buffer, data.byteOffset + 1, 8));
           checkCanonicalEncoding(f, new Uint8Array(data.buffer, data.byteOffset, varIntLen));
-          return { cbor: { isCbor: true, type: MajorType.Simple, value: { float: f } }, len: varIntLen };
+          return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Float', value: f } }, len: varIntLen };
         } default:
           switch (value) {
             case 20:
-              return { cbor: Cbor.false, len: varIntLen };
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'False' } }, len: varIntLen };
             case 21:
-              return { cbor: Cbor.true, len: varIntLen };
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'True' } }, len: varIntLen };
             case 22:
-              return { cbor: Cbor.null, len: varIntLen };
+              return { cbor: { isCbor: true, type: MajorType.Simple, value: { type: 'Null' } }, len: varIntLen };
             default:
-              return { cbor: { isCbor: true, type: MajorType.Simple, value: value }, len: varIntLen };
+              // Per dCBOR spec, only false/true/null/floats are valid
+              throw new Error("Invalid simple value");
           }
       }
   }
 }
 
-function checkCanonicalEncoding(f: any, buf: Uint8Array) {
-  const buf2 = encodeCbor(f);
+function checkCanonicalEncoding(cbor: Cbor | CborNumber, buf: Uint8Array) {
+  // If it's already a CBOR object, encode it directly
+  // Otherwise treat it as a native value (for floats, etc.)
+  const buf2 = isCbor(cbor) ? cborData(cbor) : encodeCbor(cbor);
   if (!areBytesEqual(buf, buf2)) {
     throw new Error("Non-canonical encoding");
   }

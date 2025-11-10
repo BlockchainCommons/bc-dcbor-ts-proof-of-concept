@@ -4,18 +4,23 @@
   "description": "",
   "main": "dist/index.js",
   "scripts": {
-    "test": "jest",
-    "test-encode": "jest src/encode.spec.ts",
-    "test-float": "jest src/float.spec.ts",
-    "test-map": "jest src/map.spec.ts",
-    "compile": "tsc"
+    "test": "jest --testPathIgnorePatterns=cli.test.ts",
+    "test-cli": "jest cli.test.ts",
+    "compile": "tsc",
+    "test-examples": "npm run compile && node scripts/test-examples.js",
+    "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
+    "lint:fix": "eslint 'src/**/*.ts' 'tests/**/*.ts' --fix"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@eslint/js": "^9.39.1",
     "@types/collections": "^5.1.2",
     "@types/jest": "^29.5.2",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "eslint": "^9.39.1",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
