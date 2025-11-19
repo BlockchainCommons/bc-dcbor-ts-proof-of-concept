@@ -1,8 +1,16 @@
 {
-  "name": "dcbor",
-  "version": "1.0.0",
+  "name": "@leonardocustodio/dcbor",
+  "version": "2.0.2",
   "description": "",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/src/index.js",
+      "require": "./dist/src/index.js",
+      "types": "./dist/src/index.d.ts"
+    }
+  },
   "scripts": {
     "test": "jest --testPathIgnorePatterns=cli.test.ts",
     "test-cli": "jest cli.test.ts",
