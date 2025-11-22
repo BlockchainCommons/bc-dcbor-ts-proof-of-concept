@@ -10,40 +10,48 @@
 // Core CBOR types and encoding/decoding
 export {
   Cbor,
-  CborEncodable,
+  type CborEncodable,
   MajorType,
-  CborUnsignedType,
-  CborNegativeType,
-  CborByteStringType,
-  CborTextType,
-  CborArrayType,
-  CborMapType,
-  CborTaggedType,
-  CborSimpleType,
+  type CborUnsignedType,
+  type CborNegativeType,
+  type CborByteStringType,
+  type CborTextType,
+  type CborArrayType,
+  type CborMapType,
+  type CborTaggedType,
+  type CborSimpleType,
 } from './cbor';
 
 // Simple value types
 export {
-  Simple,
+  type Simple,
   simpleName,
   isFloat,
   isNaN,
 } from './simple';
 
 // Encoding/Decoding
-export { cbor, cborData, CborConvenience } from './cbor';
+export { cbor, cborData, type CborConvenience } from './cbor';
 // Re-export convenience methods at top level for ease of use
 export { toTaggedValue } from './cbor';
 export { decodeCbor } from './decode';
 
 // Map and Set
-export { CborMap, MapEntry } from './map';
+export { CborMap, type MapEntry } from './map';
 export { CborSet } from './set';
 
 // Tags and Tagged values
-export { Tag } from './tag';
-export { CBORTagged } from './cbor-tagged';
-export { TagsStore, TagsStoreTrait } from './tags-store';
+export { type Tag } from './tag';
+export {
+  type CBORTagged,
+  type CBORTaggedEncodable,
+  type CBORTaggedDecodable,
+  type CBORTaggedCodable,
+  createTaggedCbor,
+  validateTag,
+  extractTaggedContent
+} from './cbor-tagged';
+export { TagsStore, type TagsStoreTrait } from './tags-store';
 export * from './tags';
 export { registerTags, registerTagsIn, tagsForValues } from './tags';
 
@@ -57,7 +65,7 @@ export {
   diagnosticAnnotated,
   diagnosticOpt,
   summary,
-  DiagFormatOpts
+  type DiagFormatOpts
 } from './diag';
 
 // Hex formatting
@@ -66,16 +74,16 @@ export {
   hexAnnotated,
   hexToBytes,
   bytesToHex,
-  HexFormatOpts
+  type HexFormatOpts
 } from './dump';
 
 // Walk/Traversal functionality
 export {
   walk,
-  EdgeType,
-  EdgeTypeVariant,
-  WalkElement,
-  Visitor,
+  type EdgeType,
+  type EdgeTypeVariant,
+  type WalkElement,
+  type Visitor,
   asSingle,
   asKeyValue,
   edgeLabel,
@@ -89,15 +97,15 @@ export {
 
 // Codable interfaces
 export {
-  CBORCodable,
-  CBOREncodable,
-  CBORDecodable
+  type CBORCodable,
+  type CBOREncodable,
+  type CBORDecodable
 } from './cbor-codable';
 
 // Error types (matches Rust's Error enum)
 export {
-  Error,
-  Result,
+  type Error,
+  type Result,
   Ok,
   Err,
   errorMsg,
