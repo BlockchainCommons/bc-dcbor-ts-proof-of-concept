@@ -46,6 +46,10 @@
   ],
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leonardocustodio/bc-dcbor-ts"
+  },
   "engines": {
     "node": ">=16.0.0"
   },

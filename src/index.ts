@@ -124,6 +124,7 @@ export {
 // Hex formatting
 export {
   hex,
+  hexOpt,
   hexAnnotated,
   hexToBytes,
   bytesToHex,
