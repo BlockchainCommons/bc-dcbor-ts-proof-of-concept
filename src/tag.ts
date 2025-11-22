@@ -39,27 +39,13 @@ export function createTag(value: CborNumber, name?: string): Tag {
 }
 
 /**
- * Check if two tags are equal (same numeric value).
- *
- * @param a - First tag
- * @param b - Second tag
- * @returns true if tags have the same value
- */
-export function tagsEqual(a: Tag, b: Tag): boolean {
-  return a.value === b.value;
-}
-
-/**
  * Get the string representation of a tag.
+ * Internal function used for error messages.
  *
  * @param tag - The tag to represent
  * @returns String representation (name if available, otherwise value)
  *
- * @example
- * ```typescript
- * tagToString(createTag(1, 'date')); // 'date'
- * tagToString(createTag(99)); // '99'
- * ```
+ * @internal
  */
 export function tagToString(tag: Tag): string {
   return tag.name ?? tag.value.toString();
