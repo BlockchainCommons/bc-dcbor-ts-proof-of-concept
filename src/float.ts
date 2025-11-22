@@ -38,16 +38,8 @@ export function hasFractionalPart(n: number): boolean {
 }
 
 /**
- * Convert number to 64-bit float binary (big-endian).
- */
-export function numberToBinary64(n: number): Uint8Array {
-  const data = new Uint8Array(8);
-  byteData.packTo(n, { bits: 64, fp: true, be: true }, data);
-  return data;
-}
-
-/**
  * Convert 64-bit binary to number.
+ * @internal
  */
 export function binary64ToNumber(data: Uint8Array): number {
   return byteData.unpack(data, { bits: 64, fp: true, be: true });
@@ -89,6 +81,7 @@ export function binary16ToNumber(data: Uint8Array): number {
  * Encode f64 value to CBOR data bytes.
  * Implements numeric reduction and canonical encoding rules.
  * Matches Rust's f64_cbor_data function.
+ * @internal
  */
 export function f64CborData(value: number): Uint8Array {
   const n = value;
@@ -125,8 +118,11 @@ export function f64CborData(value: number): Uint8Array {
     return CBOR_NAN;
   }
 
-  // Encode as f64 - use encode_int style (always 8 bytes with 0x1b prefix)
-  const bytes = numberToBinary64(n);
+  // Encode as f64 - create binary manually (always 8 bytes with 0xfb prefix)
+  const buffer = new ArrayBuffer(8);
+  const view = new DataView(buffer);
+  view.setFloat64(0, n, false); // big-endian
+  const bytes = new Uint8Array(buffer);
   const majorByte = 0xfb; // 0x1b | (MajorType.Simple << 5) = 0x1b | 0xe0 = 0xfb
   return new Uint8Array([majorByte, ...bytes]);
 }
@@ -148,6 +144,7 @@ export function validateCanonicalF64(n: number): void {
  * Encode f32 value to CBOR data bytes.
  * Implements numeric reduction and canonical encoding rules.
  * Matches Rust's f32_cbor_data function.
+ * @internal
  */
 export function f32CborData(value: number): Uint8Array {
   const n = value;
@@ -201,6 +198,7 @@ export function validateCanonicalF32(n: number): void {
  * Encode f16 value to CBOR data bytes.
  * Implements numeric reduction and canonical encoding rules.
  * Matches Rust's f16_cbor_data function.
+ * @internal
  */
 export function f16CborData(value: number): Uint8Array {
   const n = value;
@@ -250,6 +248,7 @@ export function validateCanonicalF16(value: number): void {
  * Convert smallest possible float binary representation to number.
  * This is the canonical decoder - validates that larger representations
  * are not reducible to smaller ones.
+ * @internal
  */
 export function numberToBinary(n: number): Uint8Array {
   if (Number.isNaN(n)) {
@@ -266,37 +265,10 @@ export function numberToBinary(n: number): Uint8Array {
     }
     return n32;
   }
-  return numberToBinary64(n);
-}
 
-/**
- * Convert binary float data to number with canonical validation.
- * Throws error if the float uses a larger representation than necessary.
- */
-export function binaryToNumber(data: Uint8Array): number {
-  if (data.length === 2) {
-    return binary16ToNumber(data);
-  }
-
-  if (data.length === 4) {
-    const f32 = binary32ToNumber(data);
-    const n16 = numberToBinary16(f32);
-    const f16 = binary16ToNumber(n16);
-    if (f16 === f32) {
-      throw new Error('NonCanonical: 32-bit float should be 16-bit');
-    }
-    return f32;
-  }
-
-  if (data.length === 8) {
-    const f64 = binary64ToNumber(data);
-    const n32 = numberToBinary32(f64);
-    const f32 = binary32ToNumber(n32);
-    if (f32 === f64) {
-      throw new Error('NonCanonical: 64-bit float should be 32-bit');
-    }
-    return f64;
-  }
-
-  throw new Error('Invalid float length');
+  // Create 64-bit float binary inline
+  const buffer = new ArrayBuffer(8);
+  const view = new DataView(buffer);
+  view.setFloat64(0, n, false); // big-endian
+  return new Uint8Array(buffer);
 }
