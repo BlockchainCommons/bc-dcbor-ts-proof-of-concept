@@ -9,6 +9,7 @@ import { hexToBytes } from "./dump";
 import { Tag } from "./tag";
 import type { ByteString } from "./byte-string";
 import type { CborDate } from "./date";
+import { diagnosticOpt } from "./diag";
 
 export type { Simple };
 
@@ -168,9 +169,7 @@ export const Cbor = {
    * @returns A string in CBOR diagnostic notation
    */
   toString(cbor: Cbor): string {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
-    const { cborDiagnostic } = require('./diag');
-    return cborDiagnostic(cbor, { flat: true });
+    return diagnosticOpt(cbor, { flat: true });
   },
 
   /**
@@ -182,9 +181,8 @@ export const Cbor = {
    * @returns A string with type annotations
    */
   toDebugString(cbor: Cbor): string {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
-    const { cborDebug } = require('./debug');
-    return cborDebug(cbor);
+    // Debug string is the same as diagnostic for now
+    return diagnosticOpt(cbor, { flat: false });
   },
 
   /**
@@ -194,9 +192,7 @@ export const Cbor = {
    * @returns A multi-line string in CBOR diagnostic notation
    */
   toDiagnostic(cbor: Cbor): string {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
-    const { cborDiagnostic } = require('./diag');
-    return cborDiagnostic(cbor, { flat: false });
+    return diagnosticOpt(cbor, { flat: false });
   },
 
   // ============================================================================
