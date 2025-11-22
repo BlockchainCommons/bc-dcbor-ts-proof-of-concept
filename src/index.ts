@@ -171,7 +171,7 @@ export {
 // The main convenience functions are exported from cbor.ts above
 
 // Float utilities
-export { f64CborData, hasFractionalPart } from './float';
+export { hasFractionalPart } from './float';
 
 // Varint utilities
 export {

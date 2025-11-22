@@ -99,7 +99,7 @@ export function f64CborData(value: number): Uint8Array {
     if (i128 !== undefined) {
       const i = ExactU64.exactFromI128(-1n - i128);
       if (i !== undefined) {
-        // Encode as negative integer
+        // Encode as a negative integer
         const num = typeof i === 'bigint' ? Number(i) : i;
         return encodeVarInt(num, MajorType.Negative);
       }
@@ -130,6 +130,8 @@ export function f64CborData(value: number): Uint8Array {
 /**
  * Validate canonical encoding for f64.
  * Matches Rust's validate_canonical_f64 function.
+ *
+ * TODO: Check if this is legacy code
  */
 export function validateCanonicalF64(n: number): void {
   const f32Bytes = numberToBinary32(n);
@@ -184,6 +186,8 @@ export function f32CborData(value: number): Uint8Array {
 /**
  * Validate canonical encoding for f32.
  * Matches Rust's validate_canonical_f32 function.
+ *
+ * TODO: Check if this is legacy code
  */
 export function validateCanonicalF32(n: number): void {
   const f16Bytes = numberToBinary16(n);
@@ -231,6 +235,8 @@ export function f16CborData(value: number): Uint8Array {
 /**
  * Validate canonical encoding for f16.
  * Matches Rust's validate_canonical_f16 function.
+ *
+ * TODO: Check if this is legacy code
  */
 export function validateCanonicalF16(value: number): void {
   const n = value;
@@ -245,7 +251,7 @@ export function validateCanonicalF16(value: number): void {
 }
 
 /**
- * Convert smallest possible float binary representation to number.
+ * Convert the smallest possible float binary representation to number.
  * This is the canonical decoder - validates that larger representations
  * are not reducible to smaller ones.
  * @internal
@@ -266,7 +272,7 @@ export function numberToBinary(n: number): Uint8Array {
     return n32;
   }
 
-  // Create 64-bit float binary inline
+  // Create a 64-bit float binary inline
   const buffer = new ArrayBuffer(8);
   const view = new DataView(buffer);
   view.setFloat64(0, n, false); // big-endian
