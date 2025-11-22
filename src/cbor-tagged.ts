@@ -97,6 +97,6 @@ export interface CBORTagged {
 }
 
 // Re-export interfaces and functions from separate modules for convenience
-export { CBORTaggedEncodable, createTaggedCbor } from './cbor-tagged-encodable';
-export { CBORTaggedDecodable, validateTag, extractTaggedContent } from './cbor-tagged-decodable';
-export { CBORTaggedCodable } from './cbor-tagged-codable';
+export { type CBORTaggedEncodable, createTaggedCbor } from './cbor-tagged-encodable';
+export { type CBORTaggedDecodable, validateTag, extractTaggedContent } from './cbor-tagged-decodable';
+export { type CBORTaggedCodable } from './cbor-tagged-codable';
