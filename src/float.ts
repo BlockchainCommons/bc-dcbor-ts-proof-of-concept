@@ -1,8 +1,6 @@
 /**
  * Float encoding and conversion utilities for dCBOR.
  *
- * This file exists for 1:1 correspondence with Rust's float.rs.
- *
  * # Floating Point Number Support in dCBOR
  *
  * dCBOR provides canonical encoding for floating point values.

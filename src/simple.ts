@@ -1,8 +1,6 @@
 /**
  * CBOR Simple Values (Major Type 7).
  *
- * This file exists for 1:1 correspondence with Rust's simple.rs.
- *
  * @module simple
  */
 

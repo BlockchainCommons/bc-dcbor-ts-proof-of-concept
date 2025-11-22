@@ -1,12 +1,10 @@
 /**
  * Array conversion utilities for dCBOR.
  *
- * This file exists for 1:1 correspondence with Rust's array.rs.
- *
  * @module array
  */
 
-import { Cbor, MajorType, CborEncodable, cborData } from './cbor';
+import { type Cbor, MajorType, type CborEncodable, cborData } from './cbor';
 import { lexicographicallyCompareBytes } from './stdlib';
 
 /**

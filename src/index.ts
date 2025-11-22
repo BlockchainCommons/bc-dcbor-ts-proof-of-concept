@@ -31,10 +31,63 @@ export {
 } from './simple';
 
 // Encoding/Decoding
-export { cbor, cborData, type CborConvenience } from './cbor';
-// Re-export convenience methods at top level for ease of use
-export { toTaggedValue } from './cbor';
+export { cbor, cborData } from './cbor';
 export { decodeCbor } from './decode';
+
+// Convenience functions
+export {
+  // Byte String conveniences
+  toByteString,
+  toByteStringFromHex,
+  tryIntoByteString,
+  isByteString,
+  intoByteString,
+  tryByteString,
+  asByteString,
+  // Tagged Value conveniences
+  toTaggedValue,
+  tryIntoTaggedValue,
+  isTaggedValue,
+  asTaggedValue,
+  tryTaggedValue,
+  tryIntoExpectedTaggedValue,
+  tryExpectedTaggedValue,
+  // Text String conveniences
+  tryIntoText,
+  isText,
+  tryText,
+  intoText,
+  asText,
+  // Array conveniences
+  tryIntoArray,
+  isArray as isCborArray,
+  tryArray,
+  intoArray,
+  asArray as asCborArray,
+  // Map conveniences
+  tryIntoMap,
+  isMap as isCborMap,
+  tryMap,
+  intoMap,
+  asMap as asCborMap,
+  tryIntoSimpleValue,
+  // Boolean conveniences
+  cborFalse,
+  cborTrue,
+  asBool,
+  tryIntoBool,
+  isBool,
+  tryBool,
+  isTrue,
+  isFalse,
+  // Null conveniences
+  cborNull,
+  isNull,
+  // Number conveniences
+  isNumber,
+  isNaN as isCborNaN,
+  cborNaN
+} from './cbor';
 
 // Map and Set
 export { CborMap, type MapEntry } from './map';
@@ -113,8 +166,8 @@ export {
   throwError
 } from './error';
 
-// Convenience functions
-export * from './conveniences';
+// Note: conveniences.ts is an internal module (not exported in Rust either)
+// The main convenience functions are exported from cbor.ts above
 
 // Float utilities
 export { f64CborData, hasFractionalPart } from './float';
@@ -137,8 +190,5 @@ export {
 } from './exact';
 
 // Type utilities
-export { asInteger, asUnsigned, asNegative } from './conveniences';
 export { ByteString } from './byte-string';
-export { asString } from './string';
-export { asArray } from './array';
-export { asBoolean } from './bool-value';
+export { isString, asString } from './string';

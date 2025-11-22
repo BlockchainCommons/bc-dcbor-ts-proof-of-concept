@@ -1,8 +1,6 @@
 /**
  * String utilities for dCBOR, including Unicode normalization.
  *
- * This file exists for 1:1 correspondence with Rust's string_util.rs.
- *
  * @module string-util
  */
 

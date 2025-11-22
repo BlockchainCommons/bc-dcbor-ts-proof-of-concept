@@ -5,16 +5,14 @@
  * Optionally annotates the output, breaking it up into semantically meaningful lines,
  * formatting dates, and adding names of known tags.
  *
- * This file exists for 1:1 correspondence with Rust's dump.rs.
- *
  * @module dump
  */
 
-import { Cbor, MajorType, cborData } from './cbor';
-import { CborMap } from './map';
+import { type Cbor, MajorType, cborData } from './cbor';
 import { encodeVarInt } from './varint';
 import { flanked, sanitized } from './string-util';
-import { TagsStore } from './tags-store';
+import type { TagsStore } from './tags-store';
+import { getGlobalTagsStore } from './tags-store';
 import { createTag } from './tag';
 
 /**
@@ -43,7 +41,7 @@ export function hexToBytes(hexString: string): Uint8Array {
   const hex = hexString.replace(/\s/g, '');
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.substr(i, 2), 16);
+    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
   }
   return bytes;
 }
@@ -70,7 +68,7 @@ export function hex(cbor: Cbor): string {
  * @returns Hex string (possibly annotated)
  */
 export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
-  if (!opts.annotate) {
+  if (opts.annotate !== true) {
     return hex(cbor);
   }
 
@@ -95,11 +93,7 @@ export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
  */
 export function hexAnnotated(cbor: Cbor, tagsStore?: TagsStore): string {
   // Use global tags store if not provided
-  if (!tagsStore) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, no-undef
-    const { getGlobalTagsStore } = require('./tags-store');
-    tagsStore = getGlobalTagsStore();
-  }
+  tagsStore ??= getGlobalTagsStore();
   return hexOpt(cbor, { annotate: true, tagsStore });
 }
 
@@ -118,7 +112,7 @@ class DumpItem {
     let column2 = '';
     let padding = '';
 
-    if (this.note) {
+    if (this.note !== undefined) {
       const paddingCount = Math.max(
         1,
         Math.min(39, noteColumn) - column1.length + 1
@@ -175,21 +169,20 @@ function dumpItems(
     }
 
     case MajorType.ByteString: {
-      const bytes = cbor.value as Uint8Array;
-      const header = encodeVarInt(bytes.length, MajorType.ByteString);
+      const header = encodeVarInt(cbor.value.length, MajorType.ByteString);
       items.push(new DumpItem(
         level,
         [header],
-        `bytes(${bytes.length})`
+        `bytes(${cbor.value.length})`
       ));
 
-      if (bytes.length > 0) {
+      if (cbor.value.length > 0) {
         let note: string | undefined = undefined;
         // Try to decode as UTF-8 string for annotation
         try {
-          const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+          const text = new TextDecoder('utf-8', { fatal: true }).decode(cbor.value);
           const sanitizedText = sanitized(text);
-          if (sanitizedText) {
+          if (sanitizedText !== undefined && sanitizedText !== '') {
             note = flanked(sanitizedText, '"', '"');
           }
         } catch {
@@ -198,7 +191,7 @@ function dumpItems(
 
         items.push(new DumpItem(
           level + 1,
-          [bytes],
+          [cbor.value],
           note
         ));
       }
@@ -206,11 +199,14 @@ function dumpItems(
     }
 
     case MajorType.Text: {
-      const text = cbor.value as string;
-      const utf8Data = new TextEncoder().encode(text);
+      const utf8Data = new TextEncoder().encode(cbor.value);
       const header = encodeVarInt(utf8Data.length, MajorType.Text);
+      const firstByte = header[0];
+      if (firstByte === undefined) {
+        throw new Error('Invalid varint encoding');
+      }
       const headerData = [
-        new Uint8Array([header[0]]),
+        new Uint8Array([firstByte]),
         header.slice(1)
       ];
 
@@ -223,46 +219,52 @@ function dumpItems(
       items.push(new DumpItem(
         level + 1,
         [utf8Data],
-        flanked(text, '"', '"')
+        flanked(cbor.value, '"', '"')
       ));
       break;
     }
 
     case MajorType.Array: {
-      const array = cbor.value as Cbor[];
-      const header = encodeVarInt(array.length, MajorType.Array);
+      const header = encodeVarInt(cbor.value.length, MajorType.Array);
+      const firstByte = header[0];
+      if (firstByte === undefined) {
+        throw new Error('Invalid varint encoding');
+      }
       const headerData = [
-        new Uint8Array([header[0]]),
+        new Uint8Array([firstByte]),
         header.slice(1)
       ];
 
       items.push(new DumpItem(
         level,
         headerData,
-        `array(${array.length})`
+        `array(${cbor.value.length})`
       ));
 
-      for (const item of array) {
+      for (const item of cbor.value) {
         items.push(...dumpItems(item, level + 1, opts));
       }
       break;
     }
 
     case MajorType.Map: {
-      const map = cbor.value as CborMap;
-      const header = encodeVarInt(map.size, MajorType.Map);
+      const header = encodeVarInt(cbor.value.size, MajorType.Map);
+      const firstByte = header[0];
+      if (firstByte === undefined) {
+        throw new Error('Invalid varint encoding');
+      }
       const headerData = [
-        new Uint8Array([header[0]]),
+        new Uint8Array([firstByte]),
         header.slice(1)
       ];
 
       items.push(new DumpItem(
         level,
         headerData,
-        `map(${map.size})`
+        `map(${cbor.value.size})`
       ));
 
-      for (const entry of map.entries) {
+      for (const entry of cbor.value.entries) {
         items.push(...dumpItems(entry.key, level + 1, opts));
         items.push(...dumpItems(entry.value, level + 1, opts));
       }
@@ -270,25 +272,31 @@ function dumpItems(
     }
 
     case MajorType.Tagged: {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const tagValue = cbor.tag!;
+      const tagValue = cbor.tag;
+      if (tagValue === undefined) {
+        throw new Error('Tagged CBOR value must have a tag');
+      }
       const header = encodeVarInt(
         typeof tagValue === 'bigint' ? Number(tagValue) : tagValue,
         MajorType.Tagged
       );
+      const firstByte = header[0];
+      if (firstByte === undefined) {
+        throw new Error('Invalid varint encoding');
+      }
       const headerData = [
-        new Uint8Array([header[0]]),
+        new Uint8Array([firstByte]),
         header.slice(1)
       ];
 
       const noteComponents: string[] = [`tag(${tagValue})`];
 
       // Add tag name if tags store is provided
-      if (opts.tagsStore) {
+      if (opts.tagsStore !== undefined) {
         const numericTagValue = typeof tagValue === 'bigint' ? Number(tagValue) : tagValue;
         const tag = createTag(numericTagValue);
         const tagName = opts.tagsStore.assignedNameForTag(tag);
-        if (tagName) {
+        if (tagName !== undefined) {
           noteComponents.push(tagName);
         }
       }

@@ -7,8 +7,8 @@
  * @module tags-store
  */
 
-import { Cbor, CborNumber } from './cbor';
-import { Tag } from './tag';
+import type { Cbor, CborNumber } from './cbor';
+import type { Tag } from './tag';
 
 /**
  * Function type for custom CBOR value summarizers.
@@ -80,9 +80,9 @@ export interface TagsStoreTrait {
  * Stores tags with their names and optional summarizer functions.
  */
 export class TagsStore implements TagsStoreTrait {
-  private tagsByValue: Map<string, Tag> = new Map();
-  private tagsByName: Map<string, Tag> = new Map();
-  private summarizers: Map<string, CBORSummarizer> = new Map();
+  readonly #tagsByValue = new Map<string, Tag>();
+  readonly #tagsByName = new Map<string, Tag>();
+  readonly #summarizers = new Map<string, CBORSummarizer>();
 
   constructor() {
     // Start with empty store, matching Rust's Default implementation
@@ -101,10 +101,10 @@ export class TagsStore implements TagsStoreTrait {
    * ```
    */
   insert(tag: Tag): void {
-    const key = this.valueKey(tag.value);
-    this.tagsByValue.set(key, tag);
-    if (tag.name) {
-      this.tagsByName.set(tag.name, tag);
+    const key = this.#valueKey(tag.value);
+    this.#tagsByValue.set(key, tag);
+    if (tag.name !== undefined) {
+      this.#tagsByName.set(tag.name, tag);
     }
   }
 
@@ -144,8 +144,8 @@ export class TagsStore implements TagsStoreTrait {
    * ```
    */
   setSummarizer(tagValue: CborNumber, summarizer: CBORSummarizer): void {
-    const key = this.valueKey(tagValue);
-    this.summarizers.set(key, summarizer);
+    const key = this.#valueKey(tagValue);
+    this.#summarizers.set(key, summarizer);
   }
 
   /**
@@ -155,23 +155,23 @@ export class TagsStore implements TagsStoreTrait {
    * @returns true if a tag was removed, false otherwise
    */
   remove(tagValue: CborNumber): boolean {
-    const key = this.valueKey(tagValue);
-    const tag = this.tagsByValue.get(key);
-    if (!tag) {
+    const key = this.#valueKey(tagValue);
+    const tag = this.#tagsByValue.get(key);
+    if (tag === undefined) {
       return false;
     }
 
-    this.tagsByValue.delete(key);
-    if (tag.name) {
-      this.tagsByName.delete(tag.name);
+    this.#tagsByValue.delete(key);
+    if (tag.name !== undefined) {
+      this.#tagsByName.delete(tag.name);
     }
-    this.summarizers.delete(key);
+    this.#summarizers.delete(key);
     return true;
   }
 
   assignedNameForTag(tag: Tag): string | undefined {
-    const key = this.valueKey(tag.value);
-    const stored = this.tagsByValue.get(key);
+    const key = this.#valueKey(tag.value);
+    const stored = this.#tagsByValue.get(key);
     return stored?.name;
   }
 
@@ -180,22 +180,22 @@ export class TagsStore implements TagsStoreTrait {
   }
 
   tagForValue(value: CborNumber): Tag | undefined {
-    const key = this.valueKey(value);
-    return this.tagsByValue.get(key);
+    const key = this.#valueKey(value);
+    return this.#tagsByValue.get(key);
   }
 
   tagForName(name: string): Tag | undefined {
-    return this.tagsByName.get(name);
+    return this.#tagsByName.get(name);
   }
 
   nameForValue(value: CborNumber): string {
     const tag = this.tagForValue(value);
-    return tag ? this.nameForTag(tag) : value.toString();
+    return tag !== undefined ? this.nameForTag(tag) : value.toString();
   }
 
   summarizer(tag: CborNumber): CBORSummarizer | undefined {
-    const key = this.valueKey(tag);
-    return this.summarizers.get(key);
+    const key = this.#valueKey(tag);
+    return this.#summarizers.get(key);
   }
 
   /**
@@ -204,16 +204,16 @@ export class TagsStore implements TagsStoreTrait {
    * @returns Array of all registered tags
    */
   getAllTags(): Tag[] {
-    return Array.from(this.tagsByValue.values());
+    return Array.from(this.#tagsByValue.values());
   }
 
   /**
    * Clear all registered tags and summarizers.
    */
   clear(): void {
-    this.tagsByValue.clear();
-    this.tagsByName.clear();
-    this.summarizers.clear();
+    this.#tagsByValue.clear();
+    this.#tagsByName.clear();
+    this.#summarizers.clear();
   }
 
   /**
@@ -222,7 +222,7 @@ export class TagsStore implements TagsStoreTrait {
    * @returns Number of tags in the registry
    */
   get size(): number {
-    return this.tagsByValue.size;
+    return this.#tagsByValue.size;
   }
 
   /**
@@ -231,7 +231,7 @@ export class TagsStore implements TagsStoreTrait {
    *
    * @private
    */
-  private valueKey(value: CborNumber): string {
+  #valueKey(value: CborNumber): string {
     return value.toString();
   }
 }
@@ -259,9 +259,7 @@ let globalTagsStore: TagsStore | undefined;
  * ```
  */
 export function getGlobalTagsStore(): TagsStore {
-  if (!globalTagsStore) {
-    globalTagsStore = new TagsStore();
-  }
+  globalTagsStore ??= new TagsStore();
   return globalTagsStore;
 }
 

@@ -2,12 +2,11 @@
  * Integer utilities for dCBOR.
  *
  * In TypeScript, integer encoding/decoding is handled in encode.ts and decode.ts.
- * This file exists for 1:1 correspondence with Rust's int.rs.
  *
  * @module int
  */
 
-import { Cbor, MajorType } from './cbor';
+import { type Cbor, MajorType } from './cbor';
 
 /**
  * Check if a CBOR value is an unsigned integer.

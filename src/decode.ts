@@ -1,4 +1,4 @@
-import { Cbor, CborNumber, MajorType, isCbor, encodeCbor, cborData } from "./cbor";
+import { type Cbor, type CborNumber, MajorType, isCbor, encodeCbor, cborData } from "./cbor";
 import { areBytesEqual } from "./stdlib";
 import { binary16ToNumber, binary32ToNumber, binary64ToNumber } from "./float";
 import { CborMap } from "./map";
@@ -198,7 +198,7 @@ function decodeCborInternal(data: DataView): { cbor: Cbor, len: number } {
   }
 }
 
-function checkCanonicalEncoding(cbor: Cbor | CborNumber, buf: Uint8Array) {
+function checkCanonicalEncoding(cbor: Cbor | CborNumber, buf: Uint8Array): void {
   // If it's already a CBOR object, encode it directly
   // Otherwise treat it as a native value (for floats, etc.)
   const buf2 = isCbor(cbor) ? cborData(cbor) : encodeCbor(cbor);

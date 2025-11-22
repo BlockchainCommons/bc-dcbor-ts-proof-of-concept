@@ -7,7 +7,7 @@ export default defineConfig({
     dts: true,
     sourcemap: true,
     clean: true,
-    target: 'es2020',
+    target: 'es2022',
     globalName: 'DCBOR',
     noExternal: ['byte-data', 'collections/sorted-map'],
 })

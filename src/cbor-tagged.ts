@@ -13,12 +13,10 @@
  * and provide serialization/deserialization logic specifically for tagged
  * values.
  *
- * This file exists for 1:1 correspondence with Rust's cbor_tagged.rs.
- *
  * @module cbor-tagged
  */
 
-import { Tag } from './tag';
+import type { Tag } from './tag';
 
 /**
  * Interface for types that have associated CBOR tags.

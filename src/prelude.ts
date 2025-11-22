@@ -1,8 +1,8 @@
 /**
- * Prelude module - Re-exports all public APIs for convenient importing.
+ * Prelude module - Re-exports commonly used types and classes.
  *
- * This module provides a single entry point to import all commonly used
- * types, functions, and interfaces from the dcbor library.
+ * This module provides a curated set of imports matching Rust's prelude.rs.
+ * Exports only types, interfaces, and core classes - not convenience functions.
  *
  * Equivalent to Rust's prelude.rs
  *
@@ -10,7 +10,7 @@
  *
  * @example
  * ```typescript
- * import { Cbor, cbor, CborMap, decodeCbor, diagnostic } from './prelude';
+ * import { Cbor, CborMap, ByteString, Tag } from './prelude';
  * ```
  */
 
@@ -29,44 +29,38 @@ export type {
   CborNumber
 } from './cbor';
 
-// Encoding/Decoding
-export { cbor, cborData } from './cbor';
-export { decodeCbor } from './decode';
-
 // Codable interfaces
 export type { CBOREncodable, CBORDecodable, CBORCodable } from './cbor-codable';
 
 // Tagged value interfaces
 export type { CBORTagged, CBORTaggedEncodable, CBORTaggedDecodable, CBORTaggedCodable } from './cbor-tagged';
 
-// Map and Set
+// Map and Set classes
 export { CborMap } from './map';
 export { CborSet } from './set';
 
-// Date
+// ByteString class
+export { ByteString } from './byte-string';
+
+// Date class
 export { CborDate } from './date';
 
 // Tag handling
-export { Tag, createTag, tagsEqual, tagToString } from './tag';
-export { TagsStore, getGlobalTagsStore } from './tags-store';
+export type { Tag } from './tag';
+export { createTag, tagsEqual, tagToString } from './tag';
+export { TagsStore, getGlobalTagsStore, withTags, withTagsMut } from './tags-store';
 export type { TagsStoreTrait } from './tags-store';
+export { tagsForValues } from './tags';
 
-// Diagnostic formatting
-export { diagnostic, diagnosticAnnotated, diagnosticFlat, diagnosticOpt, summary } from './diag';
+// Format options
 export type { DiagFormatOpts } from './diag';
+export type { HexFormatOpts } from './dump';
 
 // Walk/traversal
-export { walk, EdgeType } from './walk';
+export { EdgeType } from './walk';
 export type { WalkElement, EdgeTypeVariant, Visitor } from './walk';
 
 // Error handling
 export type { Error, Result } from './error';
 export { Ok, Err, errorMsg, errorToString, throwError } from './error';
 
-// Utilities
-export { bytesToHex, hexToBytes } from './dump';
-export { isFloat } from './simple';
-export { numberToBinary, binaryToNumber } from './float';
-
-// Conveniences
-export { isBoolean, asNumber, asText, isArray, isMap, asBytes, isTagged } from './conveniences';

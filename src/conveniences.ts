@@ -7,8 +7,8 @@
  * @module conveniences
  */
 
-import { Cbor, MajorType, CborNumber, CborEncodable } from './cbor';
-import { CborMap } from './map';
+import { type Cbor, MajorType, type CborNumber, type CborEncodable } from './cbor';
+import type { CborMap } from './map';
 import { isFloat as isSimpleFloat } from './simple';
 import { decodeCbor } from './decode';
 
@@ -583,8 +583,7 @@ export function mapValue<K extends CborEncodable, V>(cbor: Cbor, key: K): V | un
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
-  const map = cbor.value as CborMap;
-  return map.get<K, V>(key);
+  return cbor.value.get<K, V>(key);
 }
 
 /**
@@ -598,8 +597,7 @@ export function mapHas<K extends CborEncodable>(cbor: Cbor, key: K): boolean | u
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
-  const map = cbor.value as CborMap;
-  return map.has(key);
+  return cbor.value.has(key);
 }
 
 /**
@@ -612,8 +610,7 @@ export function mapKeys(cbor: Cbor): Cbor[] | undefined {
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
-  const map = cbor.value as CborMap;
-  return map.entries.map(e => e.key);
+  return cbor.value.entries.map(e => e.key);
 }
 
 /**
@@ -626,8 +623,7 @@ export function mapValues(cbor: Cbor): Cbor[] | undefined {
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
-  const map = cbor.value as CborMap;
-  return map.entries.map(e => e.value);
+  return cbor.value.entries.map(e => e.value);
 }
 
 /**
@@ -640,8 +636,7 @@ export function mapSize(cbor: Cbor): number | undefined {
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
-  const map = cbor.value as CborMap;
-  return map.size;
+  return cbor.value.size;
 }
 
 /**
@@ -654,8 +649,7 @@ export function mapIsEmpty(cbor: Cbor): boolean | undefined {
   if (cbor.type !== MajorType.Map) {
     return undefined;
   }
-  const map = cbor.value as CborMap;
-  return map.size === 0;
+  return cbor.value.size === 0;
 }
 
 // ============================================================================

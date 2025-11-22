@@ -19,13 +19,11 @@
  * identical byte representations, which is crucial for applications that rely
  * on consistent hashing, digital signatures, or other cryptographic operations.
  *
- * This file exists for 1:1 correspondence with Rust's map.rs.
- *
  * @module map
  */
 
 import { SortedMap } from 'collections/sorted-map';
-import { Cbor, CborEncodable } from './cbor';
+import { type Cbor, type CborEncodable, MajorType } from './cbor';
 import { cbor, cborData, encodeCbor } from './cbor';
 import { areBytesEqual, lexicographicallyCompareBytes } from './stdlib';
 import { bytesToHex } from './dump';
@@ -33,7 +31,7 @@ import { diagnostic } from './diag';
 import { extractCbor } from './conveniences';
 
 type MapKey = Uint8Array;
-export type MapEntry = { key: Cbor, value: Cbor };
+export interface MapEntry { key: Cbor; value: Cbor }
 
 /**
  * A deterministic CBOR map implementation.
@@ -42,14 +40,14 @@ export type MapEntry = { key: Cbor, value: Cbor };
  * encoded CBOR representation, ensuring deterministic encoding.
  */
 export class CborMap {
-  private dict: SortedMap<MapKey, MapEntry>;
+  #dict: SortedMap<MapKey, MapEntry>;
 
   /**
    * Creates a new, empty CBOR Map.
    * Optionally initializes from a JavaScript Map.
    */
   constructor(map?: Map<unknown, unknown>) {
-    this.dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
+    this.#dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
 
     if (map !== undefined) {
       for (const [key, value] of map.entries()) {
@@ -74,7 +72,7 @@ export class CborMap {
     const keyCbor = cbor(key);
     const valueCbor = cbor(value);
     const keyData = cborData(keyCbor);
-    this.dict.set(keyData, { key: keyCbor, value: valueCbor });
+    this.#dict.set(keyData, { key: keyCbor, value: valueCbor });
   }
 
   /**
@@ -84,7 +82,7 @@ export class CborMap {
     this.set(key, value);
   }
 
-  private makeKey<K extends CborEncodable>(key: K): MapKey {
+  #makeKey<K extends CborEncodable>(key: K): MapKey {
     const keyCbor = cbor(key);
     return cborData(keyCbor);
   }
@@ -95,8 +93,8 @@ export class CborMap {
    * Matches Rust's Map::get().
    */
   get<K extends CborEncodable, V>(key: K): V | undefined {
-    const keyData = this.makeKey(key);
-    const value = this.dict.get(keyData);
+    const keyData = this.#makeKey(key);
+    const value = this.#dict.get(keyData);
     if (value === undefined) {
       return undefined;
     }
@@ -122,24 +120,24 @@ export class CborMap {
    * Matches Rust's Map::contains_key().
    */
   containsKey<K extends CborEncodable>(key: K): boolean {
-    const keyData = this.makeKey(key);
-    return this.dict.has(keyData);
+    const keyData = this.#makeKey(key);
+    return this.#dict.has(keyData);
   }
 
   delete<K extends CborEncodable>(key: K): boolean {
-    const keyData = this.makeKey(key);
-    const existed = this.dict.has(keyData);
-    this.dict.delete(keyData);
+    const keyData = this.#makeKey(key);
+    const existed = this.#dict.has(keyData);
+    this.#dict.delete(keyData);
     return existed;
   }
 
   has<K extends CborEncodable>(key: K): boolean {
-    const keyData = this.makeKey(key);
-    return this.dict.has(keyData);
+    const keyData = this.#makeKey(key);
+    return this.#dict.has(keyData);
   }
 
   clear(): void {
-    this.dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
+    this.#dict = new SortedMap(null, areBytesEqual, lexicographicallyCompareBytes);
   }
 
   /**
@@ -147,7 +145,7 @@ export class CborMap {
    * Matches Rust's Map::len().
    */
   get length(): number {
-    return this.dict.length;
+    return this.#dict.length;
   }
 
   /**
@@ -155,7 +153,7 @@ export class CborMap {
    * Also matches Rust's Map::len().
    */
   get size(): number {
-    return this.dict.length;
+    return this.#dict.length;
   }
 
   /**
@@ -163,7 +161,7 @@ export class CborMap {
    * Matches Rust's Map::len().
    */
   len(): number {
-    return this.dict.length;
+    return this.#dict.length;
   }
 
   /**
@@ -171,7 +169,7 @@ export class CborMap {
    * Matches Rust's Map::is_empty().
    */
   isEmpty(): boolean {
-    return this.dict.length === 0;
+    return this.#dict.length === 0;
   }
 
   /**
@@ -179,7 +177,7 @@ export class CborMap {
    * Keys are sorted in lexicographic order of their encoded CBOR bytes.
    */
   get entries(): MapEntry[] {
-    return this.dict.map((value: MapEntry, _key: MapKey) => ({ key: value.key, value: value.value }));
+    return this.#dict.map((value: MapEntry, _key: MapKey) => ({ key: value.key, value: value.value }));
   }
 
   /**
@@ -198,21 +196,21 @@ export class CborMap {
    * Matches Rust's Map::insert_next().
    */
   setNext<K extends CborEncodable, V extends CborEncodable>(key: K, value: V): void {
-    const lastEntry = this.dict.max();
+    const lastEntry = this.#dict.max();
     if (lastEntry === undefined) {
       this.set(key, value);
       return;
     }
     const keyCbor = cbor(key);
     const newKey = cborData(keyCbor);
-    if (this.dict.has(newKey)) {
+    if (this.#dict.has(newKey)) {
       throw new Error('duplicate map key');
     }
-    const lastEntryKey = this.makeKey(lastEntry.key);
+    const lastEntryKey = this.#makeKey(lastEntry.key);
     if(lexicographicallyCompareBytes(newKey, lastEntryKey) <= 0) {
       throw new Error('map keys must be in ascending canonical order');
     }
-    this.dict.set(newKey, { key: keyCbor, value: cbor(value) });
+    this.#dict.set(newKey, { key: keyCbor, value: cbor(value) });
   }
 
   get debug(): string {
@@ -223,40 +221,38 @@ export class CborMap {
     return `{${this.entries.map(CborMap.entryDiagnostic).join(', ')}}`;
   }
 
-  private static entryDebug(entry: MapEntry): string {
+  private static entryDebug(this: void, entry: MapEntry): string {
     // Format with full type information for debug output
     const keyDebug = CborMap.formatDebug(entry.key);
     const valueDebug = CborMap.formatDebug(entry.value);
     return `0x${bytesToHex(encodeCbor(entry.key))}: (${keyDebug}, ${valueDebug})`;
   }
 
-  private static formatDebug(cbor: Cbor): string {
+  private static formatDebug(this: void, cbor: Cbor): string {
     switch (cbor.type) {
-      case 0: // Unsigned
+      case MajorType.Unsigned:
         return `unsigned(${cbor.value})`;
-      case 1: { // Negative
+      case MajorType.Negative: {
         const negValue = typeof cbor.value === 'bigint'
-          ? -(cbor.value as bigint) - 1n
-          : -(cbor.value as number) - 1;
+          ? -cbor.value - 1n
+          : -cbor.value - 1;
         return `negative(${negValue})`;
       }
-      case 2: { // ByteString
-        const bytes = cbor.value as Uint8Array;
-        return `bytes(${bytesToHex(bytes)})`;
+      case MajorType.ByteString: {
+        return `bytes(${bytesToHex(cbor.value)})`;
       }
-      case 3: // Text
+      case MajorType.Text:
         return `text("${cbor.value}")`;
-      case 4: { // Array
-        const items = (cbor.value as Cbor[]).map(CborMap.formatDebug);
+      case MajorType.Array: {
+        const items = cbor.value.map(CborMap.formatDebug);
         return `array([${items.join(', ')}])`;
       }
-      case 5: { // Map
-        const map = cbor.value as CborMap;
-        return map.debug;
+      case MajorType.Map: {
+        return cbor.value.debug;
       }
-      case 6: // Tagged
-        return `tagged(${cbor.tag}, ${CborMap.formatDebug(cbor.value as Cbor)})`;
-      case 7: { // Simple
+      case MajorType.Tagged:
+        return `tagged(${cbor.tag}, ${CborMap.formatDebug(cbor.value)})`;
+      case MajorType.Simple: {
         const simple = cbor.value;
         if (typeof simple === 'object' && simple !== null && 'type' in simple) {
           switch (simple.type) {
@@ -277,7 +273,7 @@ export class CborMap {
     }
   }
 
-  private static entryDiagnostic(entry: MapEntry): string {
+  private static entryDiagnostic(this: void, entry: MapEntry): string {
     return `${diagnostic(entry.key)}: ${diagnostic(entry.value)}`;
   }
 

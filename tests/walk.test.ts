@@ -338,7 +338,11 @@ describe('walk tests', () => {
     walk(cbor(map), undefined, visitor);
 
     // Verify root visit
-    expect(traversalLog[0][1].type).toBe('none');
+    const firstLog = traversalLog[0];
+    if (firstLog === undefined) {
+      throw new Error('Expected at least one traversal log entry');
+    }
+    expect(firstLog[1].type).toBe('none');
 
     // Check that we have the expected edge types
     const edgeTypes = traversalLog.map(([_, edge]) => edge.type);
@@ -348,10 +352,10 @@ describe('walk tests', () => {
 
     // Check for array element edges with indices
     const hasArrayElement0 = traversalLog.some(([_, edge]) =>
-      edge.type === 'array_element' && edge.index === 0
+      edge.type === 'array_element' && 'index' in edge && edge.index === 0
     );
     const hasArrayElement1 = traversalLog.some(([_, edge]) =>
-      edge.type === 'array_element' && edge.index === 1
+      edge.type === 'array_element' && 'index' in edge && edge.index === 1
     );
     expect(hasArrayElement0).toBe(true);
     expect(hasArrayElement1).toBe(true);
@@ -379,15 +383,27 @@ describe('walk tests', () => {
 
     // Should see: None (root), TaggedContent, TaggedContent, ArrayElement(0),
     // ArrayElement(1), ArrayElement(2)
-    expect(edgeLog[0].type).toBe('none'); // Root tagged value
-    expect(edgeLog[1].type).toBe('tagged_content'); // Inner tagged value
-    expect(edgeLog[2].type).toBe('tagged_content'); // Array content of inner tagged
-    expect(edgeLog[3].type).toBe('array_element'); // First array element
-    if (edgeLog[3].type === 'array_element') expect(edgeLog[3].index).toBe(0);
-    expect(edgeLog[4].type).toBe('array_element'); // Second array element
-    if (edgeLog[4].type === 'array_element') expect(edgeLog[4].index).toBe(1);
-    expect(edgeLog[5].type).toBe('array_element'); // Third array element
-    if (edgeLog[5].type === 'array_element') expect(edgeLog[5].index).toBe(2);
+    const edge0 = edgeLog[0];
+    const edge1 = edgeLog[1];
+    const edge2 = edgeLog[2];
+    const edge3 = edgeLog[3];
+    const edge4 = edgeLog[4];
+    const edge5 = edgeLog[5];
+
+    if (edge0 === undefined || edge1 === undefined || edge2 === undefined ||
+        edge3 === undefined || edge4 === undefined || edge5 === undefined) {
+      throw new Error('Expected 6 edges in log');
+    }
+
+    expect(edge0.type).toBe('none'); // Root tagged value
+    expect(edge1.type).toBe('tagged_content'); // Inner tagged value
+    expect(edge2.type).toBe('tagged_content'); // Array content of inner tagged
+    expect(edge3.type).toBe('array_element'); // First array element
+    if (edge3.type === 'array_element') expect(edge3.index).toBe(0);
+    expect(edge4.type).toBe('array_element'); // Second array element
+    if (edge4.type === 'array_element') expect(edge4.index).toBe(1);
+    expect(edge5.type).toBe('array_element'); // Third array element
+    if (edge5.type === 'array_element') expect(edge5.index).toBe(2);
   });
 
   /// Test map key-value semantics

@@ -12,13 +12,11 @@
  * This interface enables seamless encoding of TypeScript types to properly tagged CBOR
  * values.
  *
- * This file exists for 1:1 correspondence with Rust's cbor_tagged_encodable.rs.
- *
  * @module cbor-tagged-encodable
  */
 
-import { Cbor, MajorType, CborTaggedType } from './cbor';
-import { CBORTagged } from './cbor-tagged';
+import { type Cbor, MajorType, type CborTaggedType } from './cbor';
+import type { CBORTagged } from './cbor-tagged';
 
 /**
  * Interface for types that can be encoded to CBOR with a specific tag.
@@ -125,6 +123,9 @@ export function createTaggedCbor(encodable: CBORTaggedEncodable): Cbor {
   }
 
   const tag = tags[0];
+  if (tag === undefined) {
+    throw new Error('Tag is undefined');
+  }
   const untagged = encodable.untaggedCbor();
 
   const result: CborTaggedType = {

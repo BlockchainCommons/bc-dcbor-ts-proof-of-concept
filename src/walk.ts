@@ -7,7 +7,7 @@
  * @module walk
  */
 
-import { Cbor, MajorType, CborMapType, CborArrayType, CborTaggedType } from './cbor';
+import { type Cbor, MajorType, type CborMapType, type CborArrayType, type CborTaggedType } from './cbor';
 
 /**
  * Types of edges in the CBOR tree traversal.
@@ -210,7 +210,7 @@ function walkInternal<State>(
   edge: EdgeTypeVariant,
   state: State,
   visitor: Visitor<State>,
-  skipVisit: boolean = false
+  skipVisit = false
 ): State {
   let currentState = state;
   let stopDescent = false;
@@ -229,6 +229,8 @@ function walkInternal<State>(
   }
 
   // Recursively visit children based on CBOR type
+  // Only container types (Array, Map, Tagged) need special handling; leaf nodes use default
+  // eslint-disable-next-line @typescript-eslint/switch-exhaustiveness-check
   switch (cbor.type) {
     case MajorType.Array:
       currentState = walkArray(cbor, level, currentState, visitor);
@@ -266,6 +268,9 @@ function walkArray<State>(
 
   for (let index = 0; index < cbor.value.length; index++) {
     const item = cbor.value[index];
+    if (item === undefined) {
+      throw new Error(`Array element at index ${index} is undefined`);
+    }
     currentState = walkInternal(
       item,
       level + 1,

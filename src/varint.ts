@@ -1,4 +1,4 @@
-import { CborNumber, isCborNumber, MajorType } from "./cbor";
+import { type CborNumber, isCborNumber, type MajorType } from "./cbor";
 import { hasFractionalPart } from "./float";
 
 function typeBits(t: MajorType): number {
@@ -109,33 +109,63 @@ export function encodeBitPattern(majorType: MajorType, value: Uint8Array): Uint8
   const buffer = new ArrayBuffer(value.length + 1);
   const view = new DataView(buffer);
   switch (value.length) {
-    case 2:
+    case 2: {
+      const b0 = value[0];
+      const b1 = value[1];
+      if (b0 === undefined || b1 === undefined) {
+        throw new Error('Invalid varint data');
+      }
       view.setUint8(0, 0x19 | type);
-      view.setUint16(1, value[0] << 8 | value[1]);
+      view.setUint16(1, b0 << 8 | b1);
       break;
-    case 4:
+    }
+    case 4: {
+      const b0 = value[0];
+      const b1 = value[1];
+      const b2 = value[2];
+      const b3 = value[3];
+      if (b0 === undefined || b1 === undefined || b2 === undefined || b3 === undefined) {
+        throw new Error('Invalid varint data');
+      }
       view.setUint8(0, 0x1a | type);
-      view.setUint32(1, value[0] << 24 | value[1] << 16 | value[2] << 8 | value[3]);
+      view.setUint32(1, b0 << 24 | b1 << 16 | b2 << 8 | b3);
       break;
-    case 8:
+    }
+    case 8: {
+      const b0 = value[0];
+      const b1 = value[1];
+      const b2 = value[2];
+      const b3 = value[3];
+      const b4 = value[4];
+      const b5 = value[5];
+      const b6 = value[6];
+      const b7 = value[7];
+      if (b0 === undefined || b1 === undefined || b2 === undefined || b3 === undefined ||
+          b4 === undefined || b5 === undefined || b6 === undefined || b7 === undefined) {
+        throw new Error('Invalid varint data');
+      }
       view.setUint8(0, 0x1b | type);
       view.setBigUint64(1,
-        BigInt(value[0]) << 56n |
-        BigInt(value[1]) << 48n |
-        BigInt(value[2]) << 40n |
-        BigInt(value[3]) << 32n |
-        BigInt(value[4]) << 24n |
-        BigInt(value[5]) << 16n |
-        BigInt(value[6]) << 8n |
-        BigInt(value[7])
+        BigInt(b0) << 56n |
+        BigInt(b1) << 48n |
+        BigInt(b2) << 40n |
+        BigInt(b3) << 32n |
+        BigInt(b4) << 24n |
+        BigInt(b5) << 16n |
+        BigInt(b6) << 8n |
+        BigInt(b7)
       );
       break;
+    }
   }
   return new Uint8Array(buffer);
 }
 
 export function decodeBitPattern(data: Uint8Array): { majorType: MajorType, bitPattern: Uint8Array} {
   const initialByte = data[0];
+  if (initialByte === undefined) {
+    throw new Error('Empty data array');
+  }
   const majorType = initialByte >> 5;
   const additionalInfo = initialByte & 0x1f;
   let length: number;

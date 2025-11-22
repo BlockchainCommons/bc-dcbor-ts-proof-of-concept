@@ -7,7 +7,7 @@
  * @module tag
  */
 
-import { CborNumber } from './cbor';
+import type { CborNumber } from './cbor';
 
 /**
  * A CBOR tag with an optional name.

@@ -14,12 +14,10 @@
  * These interfaces allow for ergonomic conversions using TypeScript's type system and
  * enable seamless integration with dCBOR's deterministic encoding rules.
  *
- * This file exists for 1:1 correspondence with Rust's cbor_codable.rs.
- *
  * @module cbor-codable
  */
 
-import { Cbor } from './cbor';
+import type { Cbor } from './cbor';
 
 /**
  * Interface for types that can be encoded to CBOR.

@@ -7,14 +7,14 @@
  * @module set
  */
 
-import { Cbor, MajorType, CborEncodable } from './cbor';
+import { type Cbor, MajorType, type CborEncodable } from './cbor';
 import { cbor, cborData } from './cbor';
 import { CborMap } from './map';
-import { createTag } from './tag';
+import { createTag, type Tag } from './tag';
 import { TAG_SET } from './tags';
 import {
-  CBORTaggedEncodable,
-  CBORTaggedDecodable,
+  type CBORTaggedEncodable,
+  type CBORTaggedDecodable,
   createTaggedCbor,
   validateTag,
   extractTaggedContent
@@ -46,10 +46,10 @@ import { extractCbor } from './conveniences';
  * ```
  */
 export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet> {
-  private map: CborMap;
+  readonly #map: CborMap;
 
   constructor() {
-    this.map = new CborMap();
+    this.#map = new CborMap();
   }
 
   // =========================================================================
@@ -126,7 +126,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
   insert(value: CborEncodable): void {
     const cborValue = encodeCborValue(value);
     // In a set, key and value are the same
-    this.map.set(cborValue, cborValue);
+    this.#map.set(cborValue, cborValue);
   }
 
   /**
@@ -144,7 +144,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    */
   contains(value: CborEncodable): boolean {
     const cborValue = encodeCborValue(value);
-    return this.map.has(cborValue);
+    return this.#map.has(cborValue);
   }
 
   /**
@@ -162,14 +162,14 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    */
   delete(value: CborEncodable): boolean {
     const cborValue = encodeCborValue(value);
-    return this.map.delete(cborValue);
+    return this.#map.delete(cborValue);
   }
 
   /**
    * Remove all elements from the set.
    */
   clear(): void {
-    this.map.clear();
+    this.#map.clear();
   }
 
   /**
@@ -178,7 +178,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * @returns Number of elements
    */
   get size(): number {
-    return this.map.size;
+    return this.#map.size;
   }
 
   /**
@@ -187,7 +187,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * @returns true if set has no elements
    */
   isEmpty(): boolean {
-    return this.map.size === 0;
+    return this.#map.size === 0;
   }
 
   // =========================================================================
@@ -312,7 +312,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * ```
    */
   *[Symbol.iterator](): Iterator<Cbor> {
-    for (const [_, value] of this.map) {
+    for (const [_, value] of this.#map) {
       yield value;
     }
   }
@@ -355,7 +355,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
   // CBORTagged Implementation
   // =========================================================================
 
-  cborTags() {
+  cborTags(): Tag[] {
     return [createTag(TAG_SET, 'set')];
   }
 

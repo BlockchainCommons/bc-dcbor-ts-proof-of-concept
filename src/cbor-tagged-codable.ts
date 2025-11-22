@@ -8,13 +8,11 @@
  * The interface is automatically implemented for any type that implements both
  * `CBORTaggedEncodable` and `CBORTaggedDecodable`.
  *
- * This file exists for 1:1 correspondence with Rust's cbor_tagged_codable.rs.
- *
  * @module cbor-tagged-codable
  */
 
-import { CBORTaggedEncodable } from './cbor-tagged-encodable';
-import { CBORTaggedDecodable } from './cbor-tagged-decodable';
+import type { CBORTaggedEncodable } from './cbor-tagged-encodable';
+import type { CBORTaggedDecodable } from './cbor-tagged-decodable';
 
 /**
  * Interface for types that can be both encoded to and decoded from CBOR with a

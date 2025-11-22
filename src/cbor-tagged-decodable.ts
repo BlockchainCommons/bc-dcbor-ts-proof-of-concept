@@ -8,14 +8,12 @@
  * data. This interface allows TypeScript types to verify that incoming CBOR data has the
  * expected tag(s) and to decode the data appropriately.
  *
- * This file exists for 1:1 correspondence with Rust's cbor_tagged_decodable.rs.
- *
  * @module cbor-tagged-decodable
  */
 
-import { Cbor, MajorType } from './cbor';
-import { CBORTagged } from './cbor-tagged';
-import { Tag } from './tag';
+import { type Cbor, MajorType } from './cbor';
+import type { CBORTagged } from './cbor-tagged';
+import type { Tag } from './tag';
 
 /**
  * Interface for types that can be decoded from CBOR with a specific tag.
@@ -159,7 +157,7 @@ export function validateTag(cbor: Cbor, expectedTags: Tag[]): Tag {
   const tagValue = cbor.tag;
 
   const matchingTag = expectedTags.find(t => t.value === tagValue);
-  if (!matchingTag) {
+  if (matchingTag === undefined) {
     const expectedStr = expectedValues.join(' or ');
     throw new Error(`Wrong tag: expected ${expectedStr}, got ${tagValue}`);
   }

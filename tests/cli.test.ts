@@ -268,8 +268,13 @@ function mapCommand(args: string[], output: 'diag' | 'hex', annotate = false): s
   const map = CborMap.new();
 
   for (let i = 0; i < args.length; i += 2) {
-    const key = parseDiagnostic(args[i]);
-    const value = parseDiagnostic(args[i + 1]);
+    const keyStr = args[i];
+    const valueStr = args[i + 1];
+    if (keyStr === undefined || valueStr === undefined) {
+      throw new Error('Invalid map arguments');
+    }
+    const key = parseDiagnostic(keyStr);
+    const value = parseDiagnostic(valueStr);
     map.set(key, value);
   }
 
