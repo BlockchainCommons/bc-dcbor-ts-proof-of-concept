@@ -41,7 +41,7 @@ import type { Tag } from './tag';
  *
  * 1. **IANA Registration Simplification**: If you initially choose a tag in
  *    the Specification Required range (24-32767) and later want to move to the
- *    simpler First Come First Served range (32768+), you can migrate while
+ *    simpler First Come, First Served range (32768+), you can migrate while
  *    maintaining compatibility with existing data.
  *
  * 2. **Protocol Evolution**: As your protocol evolves, you can introduce new

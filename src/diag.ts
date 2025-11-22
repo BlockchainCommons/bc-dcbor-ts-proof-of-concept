@@ -1,21 +1,21 @@
 /**
  * Enhanced diagnostic formatting for CBOR values.
  *
- * Provides multiple formatting options including:
+ * Provides multiple formatting options including
  * - Annotated diagnostics with tag names
  * - Summarized values using custom summarizers
- * - Flat (single-line) vs pretty (multi-line) formatting
+ * - Flat (single-line) vs. pretty (multi-line) formatting
  * - Configurable tag store usage
  *
  * @module diag
  */
 
-import { type Cbor, MajorType, type Simple } from './cbor';
-import { bytesToHex } from './dump';
-import type { CborMap } from './map';
-import { type TagsStore, getGlobalTagsStore } from './tags-store';
-import type { Tag } from './tag';
-import type { WalkElement } from './walk';
+import {type Cbor, MajorType, type Simple} from './cbor';
+import {bytesToHex} from './dump';
+import type {CborMap} from './map';
+import {getGlobalTagsStore, type TagsStore} from './tags-store';
+import type {Tag} from './tag';
+import type {WalkElement} from './walk';
 
 /**
  * Options for diagnostic formatting.
@@ -49,7 +49,7 @@ export interface DiagFormatOpts {
    * Tag store to use for tag name resolution.
    * - TagsStore instance: Use specific store
    * - 'global': Use global singleton store
-   * - 'none': Don't use any store (just show tag numbers)
+   * - 'none': Don't use any store (show tag numbers)
    *
    * @default 'global'
    */
@@ -380,8 +380,7 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
     if (store !== undefined) {
       const summarizer = store.summarizer(tag);
       if (summarizer !== undefined) {
-        const summarized = summarizer(content, opts.flat ?? false);
-        return summarized;
+        return summarizer(content, opts.flat ?? false);
       }
     }
   }

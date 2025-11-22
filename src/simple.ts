@@ -20,7 +20,7 @@ import { f64CborData } from './float';
  *
  * When encoding floating point values, dCBOR follows specific numeric
  * reduction rules detailed in Section 2.3 of the dCBOR specification,
- * including:
+ * including
  * - Integral floating point values must be reduced to integers when possible
  * - NaN values must be normalized to the canonical form `f97e00`
  */

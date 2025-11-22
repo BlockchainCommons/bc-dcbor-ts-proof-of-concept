@@ -9,7 +9,7 @@ import { tagToString } from './tag';
 
 /**
  * A comprehensive set of errors that can occur during CBOR encoding and
- * decoding operations, with special focus on enforcing the deterministic
+ * decoding operations with special focus on enforcing the deterministic
  * encoding rules specified in the dCBOR specification.
  *
  * The dCBOR implementation validates all encoded CBOR against the
@@ -76,7 +76,7 @@ export type Error =
    */
   | { type: 'UnusedData'; count: number }
   /**
-   * The keys in a decoded CBOR map were not in canonical lexicographic order
+   * The keys in a decoded CBOR map were not in the canonical lexicographic order
    * of their encoding.
    *
    * Per the CDE specification and Section 2.1 of dCBOR, map keys must be in

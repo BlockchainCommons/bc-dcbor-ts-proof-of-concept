@@ -2,7 +2,6 @@
  * BC-DCBOR TypeScript Library
  *
  * A TypeScript implementation of Blockchain Commons' Deterministic CBOR (dCBOR).
- * 1:1 port of bc-dcbor-rust.
  *
  * @module bc-dcbor
  */
