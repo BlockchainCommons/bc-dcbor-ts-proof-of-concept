@@ -27,7 +27,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm prepublishOnly
+        run: npm run prepublishOnly
         continue-on-error: false
 
       - name: Publish to NPM
