@@ -59,7 +59,7 @@ export function hex(cbor: Cbor): string {
 /**
  * Returns the encoded hexadecimal representation of CBOR with options.
  *
- * Optionally annotates the output, e.g. breaking the output up into
+ * Optionally annotates the output, e.g., breaking the output up into
  * semantically meaningful lines, formatting dates, and adding names of
  * known tags.
  *

@@ -22,7 +22,7 @@ export default [
       ...tsPlugin.configs['recommended-type-checked'].rules,
       ...tsPlugin.configs['stylistic-type-checked'].rules,
 
-      // Type safety - errors
+      // Type safety errors
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unsafe-assignment': 'error',
       '@typescript-eslint/no-unsafe-call': 'error',
@@ -69,7 +69,7 @@ export default [
         { name: 'Buffer', message: 'Use Uint8Array for cross-platform compatibility' },
         { name: '__dirname', message: 'Not available in all environments' },
         { name: '__filename', message: 'Not available in all environments' },
-        // Browser specific - disallow in cross-env code
+        // Browser-specific - disallow in cross-env code
         { name: 'window', message: 'Not available in Node.js/Bun' },
         { name: 'document', message: 'Not available in Node.js/Bun' },
         { name: 'navigator', message: 'Not available in Node.js/Bun' },

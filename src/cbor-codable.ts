@@ -29,7 +29,7 @@ import type { Cbor } from './cbor';
  * ```typescript
  * // Custom type that can convert to CBOR
  * class Person implements CBOREncodable {
- *   constructor(public name: string, public age: number) {}
+ *   constructor (public name: string, public age: number) {}
  *
  *   toCbor(): Cbor {
  *     const map = new CborMap();

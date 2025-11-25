@@ -47,7 +47,7 @@ export { CborDate } from './date';
 
 // Tag handling
 export type { Tag } from './tag';
-export { createTag, tagsEqual, tagToString } from './tag';
+export { createTag } from './tag';
 export { TagsStore, getGlobalTagsStore, withTags, withTagsMut } from './tags-store';
 export type { TagsStoreTrait } from './tags-store';
 export { tagsForValues } from './tags';

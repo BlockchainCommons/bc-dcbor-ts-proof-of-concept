@@ -2,7 +2,6 @@
  * BC-DCBOR TypeScript Library
  *
  * A TypeScript implementation of Blockchain Commons' Deterministic CBOR (dCBOR).
- * 1:1 port of bc-dcbor-rust.
  *
  * @module bc-dcbor
  */
@@ -124,6 +123,7 @@ export {
 // Hex formatting
 export {
   hex,
+  hexOpt,
   hexAnnotated,
   hexToBytes,
   bytesToHex,
@@ -170,7 +170,7 @@ export {
 // The main convenience functions are exported from cbor.ts above
 
 // Float utilities
-export { f64CborData, hasFractionalPart } from './float';
+export { hasFractionalPart } from './float';
 
 // Varint utilities
 export {

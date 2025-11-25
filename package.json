@@ -1,6 +1,6 @@
 {
   "name": "@leonardocustodio/dcbor",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "type": "module",
   "description": "Blockchain Commons Deterministic CBOR (dCBOR) for TypeScript",
   "main": "dist/index.cjs",
@@ -46,6 +46,10 @@
   ],
   "author": "",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leonardocustodio/bc-dcbor-ts"
+  },
   "engines": {
     "node": ">=16.0.0"
   },

@@ -292,12 +292,3 @@ export function withTags<T>(action: (tags: TagsStore) => T): T {
 export function withTagsMut<T>(action: (tags: TagsStore) => T): T {
   return action(getGlobalTagsStore());
 }
-
-/**
- * Reset the global tags store (useful for testing).
- *
- * @internal
- */
-export function resetGlobalTagsStore(): void {
-  globalTagsStore = undefined;
-}

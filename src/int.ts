@@ -30,7 +30,7 @@ export function isInteger(cbor: Cbor): boolean {
 }
 
 /**
- * Extract numeric value from CBOR integer.
+ * Extract the numeric value from CBOR integer.
  * Works for both unsigned and negative integers.
  * Throws if the value is not an integer.
  */

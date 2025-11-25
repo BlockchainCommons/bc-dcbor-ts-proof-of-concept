@@ -20,7 +20,7 @@ import type { CBORTaggedDecodable } from './cbor-tagged-decodable';
  *
  * This interface is automatically implemented for any type that implements both
  * `CBORTaggedEncodable` and `CBORTaggedDecodable`. It serves as a convenience
- * marker to indicate full tagged CBOR serialization support.
+ * marker to indicate full-tagged CBOR serialization support.
  *
  * @example
  * ```typescript

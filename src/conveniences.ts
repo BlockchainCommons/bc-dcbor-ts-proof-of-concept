@@ -683,7 +683,7 @@ export function tagContent(cbor: Cbor): Cbor | undefined {
 }
 
 /**
- * Check if CBOR has specific tag.
+ * Check if CBOR has a specific tag.
  *
  * @param cbor - CBOR value
  * @param tag - Tag value to check

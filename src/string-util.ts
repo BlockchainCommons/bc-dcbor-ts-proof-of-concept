@@ -55,28 +55,3 @@ export function sanitized(str: string): string | undefined {
 
   return chars.join('');
 }
-
-/**
- * Normalize string to Unicode NFC (Canonical Composition) form.
- * dCBOR requires all text strings to be in NFC form for deterministic encoding.
- */
-export function toNFC(str: string): string {
-  return str.normalize('NFC');
-}
-
-/**
- * Check if a string is in Unicode NFC form.
- */
-export function isNFC(str: string): boolean {
-  return str === str.normalize('NFC');
-}
-
-/**
- * Validate that a string is in NFC form.
- * Throws an error if not.
- */
-export function validateNFC(str: string): void {
-  if (!isNFC(str)) {
-    throw new Error('String is not in Unicode NFC form');
-  }
-}
