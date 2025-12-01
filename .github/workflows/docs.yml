@@ -3,7 +3,7 @@ name: Generate and Deploy Documentation
 on:
   push:
     branches:
-      - main
+      - v2
   workflow_dispatch:
 
 permissions:

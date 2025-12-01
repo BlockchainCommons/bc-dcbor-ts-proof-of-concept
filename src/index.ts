@@ -10,6 +10,8 @@
 export {
   Cbor,
   type CborInput,
+  type CborNumber,
+  type CborMethods,
   MajorType,
   type CborUnsignedType,
   type CborNegativeType,
@@ -53,7 +55,7 @@ export {
   type CborTaggedCodable,
   createTaggedCbor
 } from './cbor-tagged';
-export { TagsStore, type TagsStoreTrait } from './tags-store';
+export { TagsStore, type TagsStoreTrait, type CborSummarizer } from './tags-store';
 export * from './tags';
 export { registerTags, registerTagsIn, tagsForValues } from './tags';
 

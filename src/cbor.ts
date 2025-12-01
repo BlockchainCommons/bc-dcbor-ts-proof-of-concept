@@ -46,11 +46,43 @@ const MajorTypeNames: Record<MajorType, string> = {
 
 const getMajorTypeName = (type: MajorType): string => MajorTypeNames[type];
 
+/**
+ * Numeric type that can be encoded in CBOR.
+ *
+ * Supports both standard JavaScript numbers and BigInt for large integers.
+ * Numbers are automatically encoded as either unsigned or negative integers
+ * depending on their value, following dCBOR canonical encoding rules.
+ *
+ * @example
+ * ```typescript
+ * const smallNum: CborNumber = 42;
+ * const largeNum: CborNumber = 9007199254740992n;
+ * ```
+ */
 export type CborNumber = number | bigint;
 
 /**
  * Type for values that can be converted to CBOR.
- * Matches Rust's From<T> trait implementations for CBOR.
+ *
+ * This is a comprehensive union type representing all values that can be encoded
+ * as CBOR using the `cbor()` function. It includes:
+ * - Already-encoded CBOR values (`Cbor`)
+ * - Primitive types: numbers, bigints, strings, booleans, null, undefined
+ * - Binary data: `Uint8Array`, `ByteString`
+ * - Dates: `CborDate`
+ * - Collections: `CborMap`, arrays, JavaScript `Map`, JavaScript `Set`
+ * - Objects: Plain objects are converted to CBOR maps
+ *
+ * Matches Rust's `From<T>` trait implementations for CBOR.
+ *
+ * @example
+ * ```typescript
+ * cbor(42);                              // number
+ * cbor("hello");                         // string
+ * cbor([1, 2, 3]);                       // array
+ * cbor(new Map([["key", "value"]]));     // Map
+ * cbor({ name: "Alice", age: 30 });      // plain object -> CborMap
+ * ```
  */
 export type CborInput =
   | Cbor
@@ -270,7 +302,7 @@ export const cbor = (value: CborInput): Cbor => {
     // This ensures deterministic encoding regardless of how the string was composed
     const normalized = value.normalize('NFC');
     result = { isCbor: true, type: MajorType.Text, value: normalized };
-  } else if (value === null) {
+  } else if (value === null || value === undefined) {
     result = { isCbor: true, type: MajorType.Simple, value: { type: 'Null' } };
   } else if (value === true) {
     result = { isCbor: true, type: MajorType.Simple, value: { type: 'True' } };
@@ -311,7 +343,7 @@ export const cbor = (value: CborInput): Cbor => {
     }
     result = { isCbor: true, type: MajorType.Map, value: map };
   } else {
-    throw new Error("Not supported");
+    throw new CborError({ type: 'Custom', message: 'Unsupported type for CBOR encoding' });
   }
 
   return attachMethods(result) as Cbor;
@@ -376,7 +408,7 @@ export const cborData = (value: CborInput): Uint8Array => {
     return new Uint8Array([...lengthBytes, ...flatArrayBytes]);
   }
   }
-  throw new Error("Invalid CBOR");
+  throw new CborError({ type: 'WrongType' });
 };
 
 export const encodeCbor = (value: CborInput): Uint8Array => {
