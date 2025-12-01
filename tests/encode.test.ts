@@ -6,7 +6,7 @@
  * All 35 test functions from the Rust version are translated here.
  */
 
-import { cbor, cborData, Cbor, CborEncodable, toTaggedValue } from '../src/cbor';
+import { cbor, cborData, Cbor, CborInput, toTaggedValue } from '../src/cbor';
 import { diagnosticFlat } from '../src/diag';
 import { decodeCbor } from '../src/decode';
 import { hex } from '../src/dump';
@@ -118,7 +118,7 @@ function assertActualExpected(actual: string, expected: string) {
  * Matches Rust's test_cbor function
  */
 function testCbor(
-  value: CborEncodable,
+  value: CborInput,
   expectedDebug: string,
   expectedDisplay: string,
   expectedData: string
@@ -167,7 +167,7 @@ function testCborDecode(
  * Matches Rust's test_cbor_codable function
  */
 function testCborCodable(
-  value: CborEncodable,
+  value: CborInput,
   expectedDebug: string,
   expectedDisplay: string,
   expectedData: string
@@ -188,7 +188,7 @@ function testCborCodable(
   const value2 = extractCbor(decodedCbor);
 
   // Re-encode
-  cborValue = cbor(value2 as CborEncodable);
+  cborValue = cbor(value2 as CborInput);
   assertActualExpected(cborDebug(cborValue), expectedDebug);
   assertActualExpected(cborDiagnostic(cborValue), expectedDisplay);
 
@@ -578,7 +578,7 @@ describe('encode tests', () => {
     const c = cbor(n);
     const f = extractCbor(c); // Simulate f64::try_from_cbor
     expect(f).toBe(n);
-    const c2 = cbor(f as CborEncodable);
+    const c2 = cbor(f as CborInput);
     expect(cborData(c2)).toEqual(cborData(c));
     const i = extractCbor(c);
     expect(i).toBe(n);
@@ -633,7 +633,7 @@ describe('encode tests', () => {
 
   // Test 24: convert_values
   describe('convert_values', () => {
-    function testConvert(value: CborEncodable) {
+    function testConvert(value: CborInput) {
       const cborValue = cbor(value);
       const value2 = extractCbor(cborValue);
 

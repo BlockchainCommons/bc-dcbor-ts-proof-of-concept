@@ -26,7 +26,7 @@ import type { Tag } from './tag';
  * TypeScript type.
  *
  * Implementing this interface is a prerequisite for implementing
- * `CBORTaggedEncodable` and `CBORTaggedDecodable`.
+ * `CborTaggedEncodable` and `CborTaggedDecodable`.
  *
  * ## Multiple Tags for Backward Compatibility
  *
@@ -53,14 +53,14 @@ import type { Tag } from './tag';
  * @example
  * ```typescript
  * // Single tag
- * class Date implements CBORTagged {
+ * class Date implements CborTagged {
  *   cborTags(): Tag[] {
  *     return [createTag(1, 'date')];
  *   }
  * }
  *
  * // Multiple tags for backward compatibility
- * class Seed implements CBORTagged {
+ * class Seed implements CborTagged {
  *   cborTags(): Tag[] {
  *     return [
  *       createTag(40300, 'seed'),  // Primary tag (used for encoding)
@@ -70,7 +70,7 @@ import type { Tag } from './tag';
  * }
  * ```
  */
-export interface CBORTagged {
+export interface CborTagged {
   /**
    * Returns the CBOR tags associated with this type.
    *
@@ -78,10 +78,10 @@ export interface CBORTagged {
    *
    * - The first tag in the array is the "preferred" tag and will be used
    *   when encoding values of this type via
-   *   `CBORTaggedEncodable.taggedCbor()`.
+   *   `CborTaggedEncodable.taggedCbor()`.
    *
    * - All tags in the array are considered equivalent for decoding. When
-   *   `CBORTaggedDecodable.fromTaggedCbor()` is called, any tag in this
+   *   `CborTaggedDecodable.fromTaggedCbor()` is called, any tag in this
    *   array will be accepted as valid for this type.
    *
    * This design enables backward compatibility: you can introduce a new tag
@@ -95,6 +95,6 @@ export interface CBORTagged {
 }
 
 // Re-export interfaces and functions from separate modules for convenience
-export { type CBORTaggedEncodable, createTaggedCbor } from './cbor-tagged-encodable';
-export { type CBORTaggedDecodable, validateTag, extractTaggedContent } from './cbor-tagged-decodable';
-export { type CBORTaggedCodable } from './cbor-tagged-codable';
+export { type CborTaggedEncodable, createTaggedCbor } from './cbor-tagged-encodable';
+export { type CborTaggedDecodable, validateTag, extractTaggedContent } from './cbor-tagged-decodable';
+export { type CborTaggedCodable } from './cbor-tagged-codable';

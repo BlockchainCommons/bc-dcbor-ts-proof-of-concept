@@ -25,10 +25,10 @@ import { f64CborData } from './float';
  * - NaN values must be normalized to the canonical form `f97e00`
  */
 export type Simple =
-  | { type: 'False' }
-  | { type: 'True' }
-  | { type: 'Null' }
-  | { type: 'Float'; value: number };
+  | { readonly type: 'False' }
+  | { readonly type: 'True' }
+  | { readonly type: 'Null' }
+  | { readonly type: 'Float'; readonly value: number };
 
 /**
  * Returns the standard name of the simple value as a string.
@@ -36,7 +36,7 @@ export type Simple =
  * For `False`, `True`, and `Null`, this returns their lowercase string
  * representation. For `Float` values, it returns their numeric representation.
  */
-export function simpleName(simple: Simple): string {
+export const simpleName = (simple: Simple): string => {
   switch (simple.type) {
     case 'False':
       return 'false';
@@ -55,21 +55,19 @@ export function simpleName(simple: Simple): string {
       }
     }
   }
-}
+};
 
 /**
  * Checks if the simple value is a floating point number.
  */
-export function isFloat(simple: Simple): simple is { type: 'Float'; value: number } {
-  return simple.type === 'Float';
-}
+export const isFloat = (simple: Simple): simple is { type: 'Float'; value: number } =>
+  simple.type === 'Float';
 
 /**
  * Checks if the simple value is the NaN (Not a Number) representation.
  */
-export function isNaN(simple: Simple): boolean {
-  return simple.type === 'Float' && Number.isNaN(simple.value);
-}
+export const isNaN = (simple: Simple): boolean =>
+  simple.type === 'Float' && Number.isNaN(simple.value);
 
 /**
  * Encodes the simple value to its raw CBOR byte representation.
@@ -82,7 +80,7 @@ export function isNaN(simple: Simple): boolean {
  * - `Float` values encode according to the IEEE 754 floating point rules,
  *   using the shortest representation that preserves precision.
  */
-export function simpleCborData(simple: Simple): Uint8Array {
+export const simpleCborData = (simple: Simple): Uint8Array => {
   switch (simple.type) {
     case 'False':
       return encodeVarInt(20, MajorType.Simple);
@@ -93,7 +91,7 @@ export function simpleCborData(simple: Simple): Uint8Array {
     case 'Float':
       return f64CborData(simple.value);
   }
-}
+};
 
 /**
  * Compare two Simple values for equality.
@@ -102,7 +100,7 @@ export function simpleCborData(simple: Simple): Uint8Array {
  * variants, the contained floating point values are compared for equality,
  * with NaN values considered equal to each other.
  */
-export function simpleEquals(a: Simple, b: Simple): boolean {
+export const simpleEquals = (a: Simple, b: Simple): boolean => {
   if (a.type !== b.type) return false;
 
   switch (a.type) {
@@ -117,14 +115,14 @@ export function simpleEquals(a: Simple, b: Simple): boolean {
       return v1 === v2 || (Number.isNaN(v1) && Number.isNaN(v2));
     }
   }
-}
+};
 
 /**
  * Hash a Simple value.
  *
  * Matches Rust's Hash trait implementation.
  */
-export function simpleHash(simple: Simple): number {
+export const simpleHash = (simple: Simple): number => {
   // Simple FNV-1a hash
   let hash = 2166136261;
 
@@ -152,4 +150,4 @@ export function simpleHash(simple: Simple): number {
   }
 
   return hash >>> 0;
-}
+};

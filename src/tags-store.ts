@@ -19,7 +19,7 @@ import type { Tag } from './tag';
  * @param flat - If true, produce single-line output
  * @returns String summary of the value
  */
-export type CBORSummarizer = (cbor: Cbor, flat: boolean) => string;
+export type CborSummarizer = (cbor: Cbor, flat: boolean) => string;
 
 /**
  * Interface for tag store operations.
@@ -71,7 +71,7 @@ export interface TagsStoreTrait {
    * @param tag - The numeric tag value
    * @returns The summarizer function if registered, undefined otherwise
    */
-  summarizer(tag: CborNumber): CBORSummarizer | undefined;
+  summarizer(tag: CborNumber): CborSummarizer | undefined;
 }
 
 /**
@@ -82,7 +82,7 @@ export interface TagsStoreTrait {
 export class TagsStore implements TagsStoreTrait {
   readonly #tagsByValue = new Map<string, Tag>();
   readonly #tagsByName = new Map<string, Tag>();
-  readonly #summarizers = new Map<string, CBORSummarizer>();
+  readonly #summarizers = new Map<string, CborSummarizer>();
 
   constructor() {
     // Start with empty store, matching Rust's Default implementation
@@ -143,7 +143,7 @@ export class TagsStore implements TagsStoreTrait {
    * });
    * ```
    */
-  setSummarizer(tagValue: CborNumber, summarizer: CBORSummarizer): void {
+  setSummarizer(tagValue: CborNumber, summarizer: CborSummarizer): void {
     const key = this.#valueKey(tagValue);
     this.#summarizers.set(key, summarizer);
   }
@@ -193,7 +193,7 @@ export class TagsStore implements TagsStoreTrait {
     return tag !== undefined ? this.nameForTag(tag) : value.toString();
   }
 
-  summarizer(tag: CborNumber): CBORSummarizer | undefined {
+  summarizer(tag: CborNumber): CborSummarizer | undefined {
     const key = this.#valueKey(tag);
     return this.#summarizers.get(key);
   }
@@ -258,10 +258,10 @@ let globalTagsStore: TagsStore | undefined;
  * store.insert(createTag(999, 'myTag'));
  * ```
  */
-export function getGlobalTagsStore(): TagsStore {
+export const getGlobalTagsStore = (): TagsStore => {
   globalTagsStore ??= new TagsStore();
   return globalTagsStore;
-}
+};
 
 /**
  * Execute a function with access to the global tags store.
@@ -276,9 +276,9 @@ export function getGlobalTagsStore(): TagsStore {
  * console.log(tagName); // 'date'
  * ```
  */
-export function withTags<T>(action: (tags: TagsStore) => T): T {
+export const withTags = <T>(action: (tags: TagsStore) => T): T => {
   return action(getGlobalTagsStore());
-}
+};
 
 /**
  * Execute a function with mutable access to the global tags store.
@@ -289,6 +289,6 @@ export function withTags<T>(action: (tags: TagsStore) => T): T {
  * @param action - Function to execute with the tags store
  * @returns Result of the action function
  */
-export function withTagsMut<T>(action: (tags: TagsStore) => T): T {
+export const withTagsMut = <T>(action: (tags: TagsStore) => T): T => {
   return action(getGlobalTagsStore());
-}
+};

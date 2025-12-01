@@ -12,9 +12,8 @@
  * @param right - Right flanking string
  * @returns Flanked string
  */
-export function flanked(s: string, left: string, right: string): string {
-  return left + s + right;
-}
+export const flanked = (s: string, left: string, right: string): string =>
+  left + s + right;
 
 /**
  * Check if a character is printable.
@@ -22,12 +21,12 @@ export function flanked(s: string, left: string, right: string): string {
  * @param c - Character to check
  * @returns True if printable
  */
-export function isPrintable(c: string): boolean {
+export const isPrintable = (c: string): boolean => {
   if (c.length !== 1) return false;
   const code = c.charCodeAt(0);
   // Non-ASCII or ASCII printable (32-126)
   return code > 127 || (code >= 32 && code <= 126);
-}
+};
 
 /**
  * Sanitize a string by replacing non-printable characters with dots.
@@ -36,7 +35,7 @@ export function isPrintable(c: string): boolean {
  * @param str - String to sanitize
  * @returns Sanitized string or undefined if no printable characters
  */
-export function sanitized(str: string): string | undefined {
+export const sanitized = (str: string): string | undefined => {
   let hasPrintable = false;
   const chars: string[] = [];
 
@@ -54,4 +53,4 @@ export function sanitized(str: string): string | undefined {
   }
 
   return chars.join('');
-}
+};

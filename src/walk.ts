@@ -8,6 +8,7 @@
  */
 
 import { type Cbor, MajorType, type CborMapType, type CborArrayType, type CborTaggedType } from './cbor';
+import { CborError } from './error';
 
 /**
  * Types of edges in the CBOR tree traversal.
@@ -56,7 +57,7 @@ export type EdgeTypeVariant =
  * edgeLabel({ type: EdgeType.None }); // Returns undefined
  * ```
  */
-export function edgeLabel(edge: EdgeTypeVariant): string | undefined {
+export const edgeLabel = (edge: EdgeTypeVariant): string | undefined => {
   switch (edge.type) {
     case EdgeType.ArrayElement:
       return `arr[${edge.index}]`;
@@ -71,7 +72,7 @@ export function edgeLabel(edge: EdgeTypeVariant): string | undefined {
     case EdgeType.None:
       return undefined;
   }
-}
+};
 
 /**
  * Element visited during tree traversal.
@@ -97,9 +98,9 @@ export type WalkElement =
  * const cbor = asSingle(element); // Returns someCbor
  * ```
  */
-export function asSingle(element: WalkElement): Cbor | undefined {
+export const asSingle = (element: WalkElement): Cbor | undefined => {
   return element.type === 'single' ? element.cbor : undefined;
-}
+};
 
 /**
  * Returns the key-value pair if this is a 'keyvalue' variant.
@@ -113,9 +114,9 @@ export function asSingle(element: WalkElement): Cbor | undefined {
  * const pair = asKeyValue(element); // Returns [keyValue, valValue]
  * ```
  */
-export function asKeyValue(element: WalkElement): [Cbor, Cbor] | undefined {
+export const asKeyValue = (element: WalkElement): [Cbor, Cbor] | undefined => {
   return element.type === 'keyvalue' ? [element.key, element.value] : undefined;
-}
+};
 
 /**
  * Visitor function type with state threading.
@@ -185,11 +186,11 @@ export type Visitor<State> = (
  * });
  * ```
  */
-export function walk<State>(
+export const walk = <State>(
   cbor: Cbor,
   initialState: State,
   visitor: Visitor<State>
-): State {
+): State => {
   return walkInternal(
     cbor,
     0,
@@ -197,7 +198,7 @@ export function walk<State>(
     initialState,
     visitor
   );
-}
+};
 
 /**
  * Internal recursive walk implementation.
@@ -269,7 +270,7 @@ function walkArray<State>(
   for (let index = 0; index < cbor.value.length; index++) {
     const item = cbor.value[index];
     if (item === undefined) {
-      throw new Error(`Array element at index ${index} is undefined`);
+      throw new CborError({ type: 'Custom', message: `Array element at index ${index} is undefined` });
     }
     currentState = walkInternal(
       item,
@@ -370,7 +371,7 @@ function walkTagged<State>(
  * console.log(count); // 6 (array, 1, 2, inner array, 3, 4)
  * ```
  */
-export function countElements(cbor: Cbor): number {
+export const countElements = (cbor: Cbor): number => {
   interface CountState {
     count: number;
   }
@@ -378,13 +379,13 @@ export function countElements(cbor: Cbor): number {
   const result = walk<CountState>(
     cbor,
     { count: 0 },
-    (element, level, edge, state) => {
+    (_element, _level, _edge, state) => {
       return [{ count: state.count + 1 }, false];
     }
   );
 
   return result.count;
-}
+};
 
 /**
  * Helper: Collect all elements at a specific depth level.
@@ -402,7 +403,7 @@ export function countElements(cbor: Cbor): number {
  * // Returns: [1, 2, 3, 4]
  * ```
  */
-export function collectAtLevel(cbor: Cbor, targetLevel: number): Cbor[] {
+export const collectAtLevel = (cbor: Cbor, targetLevel: number): Cbor[] => {
   interface CollectState {
     items: Cbor[];
   }
@@ -410,7 +411,7 @@ export function collectAtLevel(cbor: Cbor, targetLevel: number): Cbor[] {
   const result = walk<CollectState>(
     cbor,
     { items: [] },
-    (element, level, edge, state) => {
+    (element, level, _edge, state) => {
       if (level === targetLevel && element.type === 'single') {
         return [
           { items: [...state.items, element.cbor] },
@@ -422,7 +423,7 @@ export function collectAtLevel(cbor: Cbor, targetLevel: number): Cbor[] {
   );
 
   return result.items;
-}
+};
 
 /**
  * Helper: Find first element matching a predicate.
@@ -449,26 +450,29 @@ export function collectAtLevel(cbor: Cbor, targetLevel: number): Cbor[] {
  * });
  * ```
  */
-export function findFirst(
+export const findFirst = (
   cbor: Cbor,
   predicate: (element: WalkElement) => boolean
-): Cbor | undefined {
+): Cbor | undefined => {
   interface FindState {
     found?: Cbor;
   }
 
   const result = walk<FindState>(
     cbor,
-    { found: undefined },
-    (element, level, edge, state) => {
+    {},
+    (element, _level, _edge, state) => {
       if (state.found !== undefined) {
         // Already found, stop descending
         return [state, true];
       }
 
       if (predicate(element)) {
-        const found = element.type === 'single' ? element.cbor : undefined;
-        return [{ found }, true]; // Stop after finding
+        if (element.type === 'single') {
+          return [{ found: element.cbor }, true]; // Stop after finding
+        }
+        // Matched but not a single element, stop anyway
+        return [state, true];
       }
 
       return [state, false];
@@ -476,7 +480,7 @@ export function findFirst(
   );
 
   return result.found;
-}
+};
 
 /**
  * Helper: Collect all text strings in a CBOR tree.
@@ -496,7 +500,7 @@ export function findFirst(
  * // Returns: ['Document', 'urgent', 'draft', 'Alice']
  * ```
  */
-export function collectAllText(cbor: Cbor): string[] {
+export const collectAllText = (cbor: Cbor): string[] => {
   interface TextState {
     texts: string[];
   }
@@ -504,7 +508,7 @@ export function collectAllText(cbor: Cbor): string[] {
   const result = walk<TextState>(
     cbor,
     { texts: [] },
-    (element, level, edge, state) => {
+    (element, _level, _edge, state) => {
       if (element.type === 'single' && element.cbor.type === MajorType.Text) {
         return [
           { texts: [...state.texts, element.cbor.value] },
@@ -516,7 +520,7 @@ export function collectAllText(cbor: Cbor): string[] {
   );
 
   return result.texts;
-}
+};
 
 /**
  * Helper: Get the maximum depth of a CBOR tree.
@@ -533,7 +537,7 @@ export function collectAllText(cbor: Cbor): string[] {
  * console.log(maxDepth(nested)); // 3
  * ```
  */
-export function maxDepth(cbor: Cbor): number {
+export const maxDepth = (cbor: Cbor): number => {
   interface DepthState {
     maxDepth: number;
   }
@@ -541,11 +545,11 @@ export function maxDepth(cbor: Cbor): number {
   const result = walk<DepthState>(
     cbor,
     { maxDepth: 0 },
-    (element, level, edge, state) => {
+    (_element, level, _edge, state) => {
       const newMaxDepth = Math.max(state.maxDepth, level);
       return [{ maxDepth: newMaxDepth }, false];
     }
   );
 
   return result.maxDepth;
-}
+};

@@ -16,9 +16,9 @@ import type { CborNumber } from './cbor';
  */
 export interface Tag {
   /** The numeric tag value */
-  value: CborNumber;
+  readonly value: CborNumber;
   /** Optional human-readable name for the tag */
-  name?: string;
+  readonly name?: string;
 }
 
 /**
@@ -34,9 +34,12 @@ export interface Tag {
  * const customTag = createTag(12345, 'myCustomTag');
  * ```
  */
-export function createTag(value: CborNumber, name?: string): Tag {
-  return { value, name };
-}
+export const createTag = (value: CborNumber, name?: string): Tag => {
+  if (name !== undefined) {
+    return { value, name };
+  }
+  return { value };
+};
 
 /**
  * Get the string representation of a tag.
@@ -47,6 +50,5 @@ export function createTag(value: CborNumber, name?: string): Tag {
  *
  * @internal
  */
-export function tagToString(tag: Tag): string {
-  return tag.name ?? tag.value.toString();
-}
+export const tagToString = (tag: Tag): string =>
+  tag.name ?? tag.value.toString();

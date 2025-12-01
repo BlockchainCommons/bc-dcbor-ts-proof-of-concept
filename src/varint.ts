@@ -1,18 +1,19 @@
 import { type CborNumber, isCborNumber, type MajorType } from "./cbor";
 import { hasFractionalPart } from "./float";
+import { CborError } from "./error";
 
-function typeBits(t: MajorType): number {
+const typeBits = (t: MajorType): number => {
   return t << 5;
-}
+};
 
-export function encodeVarInt(value: CborNumber, majorType: MajorType): Uint8Array {
+export const encodeVarInt = (value: CborNumber, majorType: MajorType): Uint8Array => {
   // throw an error if the value is negative.
   if (value < 0) {
-    throw new Error("Value out of range");
+    throw new CborError({ type: 'OutOfRange' });
   }
   // throw an error if the value is a number with a fractional part.
   if (typeof value === 'number' && hasFractionalPart(value)) {
-    throw new Error("Value out of range");
+    throw new CborError({ type: 'OutOfRange' });
   }
   const type = typeBits(majorType);
   // If the value is a `number` or a `bigint` that can be represented as a `number`, convert it to a `number`.
@@ -45,7 +46,7 @@ export function encodeVarInt(value: CborNumber, majorType: MajorType): Uint8Arra
     value = BigInt(value);
     const bitsNeeded = Math.ceil(Math.log2(Number(value)) / 8) * 8;
     if (bitsNeeded > 64) {
-      throw new Error("Value out of range");
+      throw new CborError({ type: 'OutOfRange' });
     }
     const length = Math.ceil(bitsNeeded / 8) + 1;
     const buffer = new ArrayBuffer(length);
@@ -59,11 +60,11 @@ export function encodeVarInt(value: CborNumber, majorType: MajorType): Uint8Arra
     view.setUint8(0, 0x1b | type);
     return new Uint8Array(buffer);
   }
-}
+};
 
-export function decodeVarIntData(dataView: DataView, offset: number): { majorType: MajorType, value: CborNumber, offset: number } {
+export const decodeVarIntData = (dataView: DataView, offset: number): { majorType: MajorType, value: CborNumber, offset: number } => {
   const initialByte = dataView.getUint8(offset);
-  const majorType = initialByte >> 5;
+  const majorType = (initialByte >> 5) as MajorType;
   const additionalInfo = initialByte & 0x1f;
   let value: CborNumber;
   offset += 1;
@@ -92,11 +93,11 @@ export function decodeVarIntData(dataView: DataView, offset: number): { majorTyp
       break;
   }
   return { majorType, value, offset };
-}
+};
 
-export function decodeVarInt(data: Uint8Array): { majorType: MajorType, value: CborNumber, offset: number } {
+export const decodeVarInt = (data: Uint8Array): { majorType: MajorType, value: CborNumber, offset: number } => {
   return decodeVarIntData(new DataView(data.buffer, data.byteOffset, data.byteLength), 0);
-}
+};
 
 function getUint64(view: DataView, byteOffset: number, littleEndian: boolean): bigint {
   const lowWord = littleEndian ? view.getUint32(byteOffset, true) : view.getUint32(byteOffset + 4, false);

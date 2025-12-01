@@ -1,31 +1,31 @@
 /**
  * Tagged CBOR encoding and decoding support.
  *
- * This module provides the `CBORTaggedCodable` interface, which serves as a
+ * This module provides the `CborTaggedCodable` interface, which serves as a
  * convenience marker for types that can be both encoded to and decoded from
  * tagged CBOR values.
  *
  * The interface is automatically implemented for any type that implements both
- * `CBORTaggedEncodable` and `CBORTaggedDecodable`.
+ * `CborTaggedEncodable` and `CborTaggedDecodable`.
  *
  * @module cbor-tagged-codable
  */
 
-import type { CBORTaggedEncodable } from './cbor-tagged-encodable';
-import type { CBORTaggedDecodable } from './cbor-tagged-decodable';
+import type { CborTaggedEncodable } from './cbor-tagged-encodable';
+import type { CborTaggedDecodable } from './cbor-tagged-decodable';
 
 /**
  * Interface for types that can be both encoded to and decoded from CBOR with a
  * specific tag.
  *
  * This interface is automatically implemented for any type that implements both
- * `CBORTaggedEncodable` and `CBORTaggedDecodable`. It serves as a convenience
+ * `CborTaggedEncodable` and `CborTaggedDecodable`. It serves as a convenience
  * marker to indicate full-tagged CBOR serialization support.
  *
  * @example
  * ```typescript
  * // Define a Date type
- * class Date implements CBORTaggedCodable<Date> {
+ * class Date implements CborTaggedCodable<Date> {
  *   constructor(public timestamp: number) {}
  *
  *   cborTags(): Tag[] {
@@ -61,7 +61,7 @@ import type { CBORTaggedDecodable } from './cbor-tagged-decodable';
  *   }
  * }
  *
- * // The CBORTaggedCodable interface is automatically implemented
+ * // The CborTaggedCodable interface is automatically implemented
  * // Create a date and demonstrate round-trip conversion
  * const original = new Date(1609459200);
  * const cborValue = original.taggedCbor();
@@ -69,4 +69,4 @@ import type { CBORTaggedDecodable } from './cbor-tagged-decodable';
  * assert(original.timestamp === roundtrip.timestamp);
  * ```
  */
-export interface CBORTaggedCodable<T> extends CBORTaggedEncodable, CBORTaggedDecodable<T> {}
+export interface CborTaggedCodable<T> extends CborTaggedEncodable, CborTaggedDecodable<T> {}

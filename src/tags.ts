@@ -186,7 +186,7 @@ export const TAG_NAME_DATE = 'date';
  *
  * @param tagsStore - The tags store to register tags into
  */
-export function registerTagsIn(tagsStore: TagsStore): void {
+export const registerTagsIn = (tagsStore: TagsStore): void => {
   const tags = [createTag(TAG_DATE, TAG_NAME_DATE)];
   tagsStore.insertAll(tags);
 
@@ -201,7 +201,7 @@ export function registerTagsIn(tagsStore: TagsStore): void {
       }
     }
   );
-}
+};
 
 /**
  * Register standard tags in the global tags store.
@@ -209,10 +209,10 @@ export function registerTagsIn(tagsStore: TagsStore): void {
  *
  * This function is idempotent - calling it multiple times is safe.
  */
-export function registerTags(): void {
+export const registerTags = (): void => {
   const globalStore = getGlobalTagsStore();
   registerTagsIn(globalStore);
-}
+};
 
 /**
  * Converts an array of tag values to their corresponding Tag objects.
@@ -243,7 +243,7 @@ export function registerTags(): void {
  * console.log(tags[2].value); // 999
  * ```
  */
-export function tagsForValues(values: (number | bigint)[]): Tag[] {
+export const tagsForValues = (values: (number | bigint)[]): Tag[] => {
   const globalStore = getGlobalTagsStore();
   return values.map(value => {
     const tag = globalStore.tagForValue(value);
@@ -253,4 +253,4 @@ export function tagsForValues(values: (number | bigint)[]): Tag[] {
     // Create basic tag with just the value
     return createTag(value);
   });
-}
+};

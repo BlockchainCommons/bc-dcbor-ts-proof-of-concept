@@ -15,6 +15,7 @@
  */
 
 import { type Cbor, MajorType, cbor as toCbor } from './cbor';
+import { CborError } from './error';
 
 /**
  * Represents a CBOR byte string (major type 2).
@@ -259,7 +260,7 @@ export class ByteString {
    */
   static fromCbor(cbor: Cbor): ByteString {
     if (cbor.type !== MajorType.ByteString) {
-      throw new Error('Wrong type');
+      throw new CborError({ type: 'WrongType' });
     }
     return new ByteString(cbor.value);
   }

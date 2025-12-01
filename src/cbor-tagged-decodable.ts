@@ -1,7 +1,7 @@
 /**
  * Tagged CBOR decoding support.
  *
- * This module provides the `CBORTaggedDecodable` interface, which enables types to
+ * This module provides the `CborTaggedDecodable` interface, which enables types to
  * be decoded from tagged CBOR values.
  *
  * Tagged CBOR values include semantic information about how to interpret the
@@ -12,13 +12,14 @@
  */
 
 import { type Cbor, MajorType } from './cbor';
-import type { CBORTagged } from './cbor-tagged';
+import type { CborTagged } from './cbor-tagged';
 import type { Tag } from './tag';
+import { CborError } from './error';
 
 /**
  * Interface for types that can be decoded from CBOR with a specific tag.
  *
- * This interface extends `CBORTagged` to provide methods for
+ * This interface extends `CborTagged` to provide methods for
  * decoding tagged CBOR data into TypeScript types. It handles verification that
  * the CBOR data has the expected tag(s) and provides utilities for both
  * tagged and untagged decoding.
@@ -26,7 +27,7 @@ import type { Tag } from './tag';
  * @example
  * ```typescript
  * // Define a Date type
- * class Date implements CBORTaggedDecodable<Date> {
+ * class Date implements CborTaggedDecodable<Date> {
  *   constructor(public timestamp: number) {}
  *
  *   cborTags(): Tag[] {
@@ -80,7 +81,7 @@ import type { Tag } from './tag';
  * assert(date.timestamp === 1609459200);
  * ```
  */
-export interface CBORTaggedDecodable<T> extends CBORTagged {
+export interface CborTaggedDecodable<T> extends CborTagged {
   /**
    * Creates an instance of this type by decoding it from untagged CBOR.
    *
@@ -148,9 +149,9 @@ export interface CBORTaggedDecodable<T> extends CBORTagged {
  * @returns The matching tag
  * @throws Error if the value is not tagged or has an unexpected tag
  */
-export function validateTag(cbor: Cbor, expectedTags: Tag[]): Tag {
+export const validateTag = (cbor: Cbor, expectedTags: Tag[]): Tag => {
   if (cbor.type !== MajorType.Tagged) {
-    throw new Error('Expected tagged CBOR value');
+    throw new CborError({ type: 'WrongType' });
   }
 
   const expectedValues = expectedTags.map(t => t.value);
@@ -159,11 +160,11 @@ export function validateTag(cbor: Cbor, expectedTags: Tag[]): Tag {
   const matchingTag = expectedTags.find(t => t.value === tagValue);
   if (matchingTag === undefined) {
     const expectedStr = expectedValues.join(' or ');
-    throw new Error(`Wrong tag: expected ${expectedStr}, got ${tagValue}`);
+    throw new CborError({ type: 'Custom', message: `Wrong tag: expected ${expectedStr}, got ${tagValue}` });
   }
 
   return matchingTag;
-}
+};
 
 /**
  * Helper function to extract the content from a tagged CBOR value.
@@ -172,9 +173,9 @@ export function validateTag(cbor: Cbor, expectedTags: Tag[]): Tag {
  * @returns The untagged content
  * @throws Error if the value is not tagged
  */
-export function extractTaggedContent(cbor: Cbor): Cbor {
+export const extractTaggedContent = (cbor: Cbor): Cbor => {
   if (cbor.type !== MajorType.Tagged) {
-    throw new Error('Expected tagged CBOR value');
+    throw new CborError({ type: 'WrongType' });
   }
   return cbor.value;
-}
+};

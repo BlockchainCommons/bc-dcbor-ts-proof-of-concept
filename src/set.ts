@@ -7,19 +7,20 @@
  * @module set
  */
 
-import { type Cbor, MajorType, type CborEncodable } from './cbor';
+import { type Cbor, MajorType, type CborInput } from './cbor';
 import { cbor, cborData } from './cbor';
 import { CborMap } from './map';
 import { createTag, type Tag } from './tag';
 import { TAG_SET } from './tags';
 import {
-  type CBORTaggedEncodable,
-  type CBORTaggedDecodable,
+  type CborTaggedEncodable,
+  type CborTaggedDecodable,
   createTaggedCbor,
   validateTag,
   extractTaggedContent
 } from './cbor-tagged';
 import { extractCbor } from './conveniences';
+import { CborError } from './error';
 
 /**
  * CBOR Set type with tag(258) encoding.
@@ -45,7 +46,7 @@ import { extractCbor } from './conveniences';
  * const tagged = set.taggedCbor();
  * ```
  */
-export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet> {
+export class CborSet implements CborTaggedEncodable, CborTaggedDecodable<CborSet> {
   readonly #map: CborMap;
 
   constructor() {
@@ -70,7 +71,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * console.log(set.size); // 3
    * ```
    */
-  static fromArray<T extends CborEncodable>(items: T[]): CborSet {
+  static fromArray<T extends CborInput>(items: T[]): CborSet {
     const set = new CborSet();
     for (const item of items) {
       set.insert(item);
@@ -90,7 +91,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * const cborSet = CborSet.fromSet(jsSet);
    * ```
    */
-  static fromSet<T extends CborEncodable>(items: Set<T>): CborSet {
+  static fromSet<T extends CborInput>(items: Set<T>): CborSet {
     return CborSet.fromArray(Array.from(items));
   }
 
@@ -100,7 +101,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * @param items - Iterable of items
    * @returns New CborSet instance
    */
-  static fromIterable<T extends CborEncodable>(items: Iterable<T>): CborSet {
+  static fromIterable<T extends CborInput>(items: Iterable<T>): CborSet {
     return CborSet.fromArray(Array.from(items));
   }
 
@@ -123,7 +124,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * set.insert(1); // No effect, already exists
    * ```
    */
-  insert(value: CborEncodable): void {
+  insert(value: CborInput): void {
     const cborValue = encodeCborValue(value);
     // In a set, key and value are the same
     this.#map.set(cborValue, cborValue);
@@ -142,7 +143,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * console.log(set.contains(99)); // false
    * ```
    */
-  contains(value: CborEncodable): boolean {
+  contains(value: CborInput): boolean {
     const cborValue = encodeCborValue(value);
     return this.#map.has(cborValue);
   }
@@ -160,7 +161,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    * set.delete(99); // Returns false
    * ```
    */
-  delete(value: CborEncodable): boolean {
+  delete(value: CborInput): boolean {
     const cborValue = encodeCborValue(value);
     return this.#map.delete(cborValue);
   }
@@ -211,10 +212,10 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
   union(other: CborSet): CborSet {
     const result = new CborSet();
     for (const value of this) {
-      result.insert(extractCbor(value) as CborEncodable);
+      result.insert(extractCbor(value) as CborInput);
     }
     for (const value of other) {
-      result.insert(extractCbor(value) as CborEncodable);
+      result.insert(extractCbor(value) as CborInput);
     }
     return result;
   }
@@ -236,7 +237,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
   intersection(other: CborSet): CborSet {
     const result = new CborSet();
     for (const value of this) {
-      const extracted = extractCbor(value) as CborEncodable;
+      const extracted = extractCbor(value) as CborInput;
       if (other.contains(extracted)) {
         result.insert(extracted);
       }
@@ -261,7 +262,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
   difference(other: CborSet): CborSet {
     const result = new CborSet();
     for (const value of this) {
-      const extracted = extractCbor(value) as CborEncodable;
+      const extracted = extractCbor(value) as CborInput;
       if (!other.contains(extracted)) {
         result.insert(extracted);
       }
@@ -277,7 +278,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
    */
   isSubsetOf(other: CborSet): boolean {
     for (const value of this) {
-      if (!other.contains(extractCbor(value) as CborEncodable)) {
+      if (!other.contains(extractCbor(value) as CborInput)) {
         return false;
       }
     }
@@ -352,7 +353,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
   }
 
   // =========================================================================
-  // CBORTagged Implementation
+  // CborTagged Implementation
   // =========================================================================
 
   cborTags(): Tag[] {
@@ -371,12 +372,12 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
 
   fromUntaggedCbor(c: Cbor): CborSet {
     if (c.type !== MajorType.Array) {
-      throw new Error('Expected array for set encoding');
+      throw new CborError({ type: 'WrongType' });
     }
 
     this.clear();
     for (const value of c.value) {
-      this.insert(extractCbor(value) as CborEncodable);
+      this.insert(extractCbor(value) as CborInput);
     }
 
     return this;
@@ -504,7 +505,7 @@ export class CborSet implements CBORTaggedEncodable, CBORTaggedDecodable<CborSet
  *
  * @internal
  */
-function encodeCborValue(value: CborEncodable): Cbor {
+function encodeCborValue(value: CborInput): Cbor {
   if (typeof value === 'object' && value !== null && 'isCbor' in value && value.isCbor === true) {
     return value as Cbor;
   }

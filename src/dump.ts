@@ -14,6 +14,7 @@ import { flanked, sanitized } from './string-util';
 import type { TagsStore } from './tags-store';
 import { getGlobalTagsStore } from './tags-store';
 import { createTag } from './tag';
+import { CborError } from './error';
 
 /**
  * Options for hex formatting.
@@ -28,23 +29,23 @@ export interface HexFormatOpts {
 /**
  * Convert bytes to hex string.
  */
-export function bytesToHex(bytes: Uint8Array): string {
+export const bytesToHex = (bytes: Uint8Array): string => {
   return Array.from(bytes)
     .map(b => b.toString(16).padStart(2, '0'))
     .join('');
-}
+};
 
 /**
  * Convert hex string to bytes.
  */
-export function hexToBytes(hexString: string): Uint8Array {
+export const hexToBytes = (hexString: string): Uint8Array => {
   const hex = hexString.replace(/\s/g, '');
   const bytes = new Uint8Array(hex.length / 2);
   for (let i = 0; i < hex.length; i += 2) {
     bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
   }
   return bytes;
-}
+};
 
 /**
  * Returns the encoded hexadecimal representation of CBOR.
@@ -52,9 +53,7 @@ export function hexToBytes(hexString: string): Uint8Array {
  * @param cbor - CBOR value to convert
  * @returns Hex string
  */
-export function hex(cbor: Cbor): string {
-  return bytesToHex(cborData(cbor));
-}
+export const hex = (cbor: Cbor): string => bytesToHex(cborData(cbor));
 
 /**
  * Returns the encoded hexadecimal representation of CBOR with options.
@@ -67,7 +66,7 @@ export function hex(cbor: Cbor): string {
  * @param opts - Formatting options
  * @returns Hex string (possibly annotated)
  */
-export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
+export const hexOpt = (cbor: Cbor, opts: HexFormatOpts = {}): string => {
   if (opts.annotate !== true) {
     return hex(cbor);
   }
@@ -82,7 +81,7 @@ export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
 
   const lines = items.map(item => item.format(roundedNoteColumn));
   return lines.join('\n');
-}
+};
 
 /**
  * Returns the encoded hexadecimal representation of CBOR, with annotations.
@@ -91,11 +90,11 @@ export function hexOpt(cbor: Cbor, opts: HexFormatOpts = {}): string {
  * @param tagsStore - Optional tags store for tag name resolution
  * @returns Annotated hex string
  */
-export function hexAnnotated(cbor: Cbor, tagsStore?: TagsStore): string {
+export const hexAnnotated = (cbor: Cbor, tagsStore?: TagsStore): string => {
   // Use global tags store if not provided
   tagsStore ??= getGlobalTagsStore();
   return hexOpt(cbor, { annotate: true, tagsStore });
-}
+};
 
 /**
  * Internal structure for dump items.
@@ -203,7 +202,7 @@ function dumpItems(
       const header = encodeVarInt(utf8Data.length, MajorType.Text);
       const firstByte = header[0];
       if (firstByte === undefined) {
-        throw new Error('Invalid varint encoding');
+        throw new CborError({ type: 'Custom', message: 'Invalid varint encoding' });
       }
       const headerData = [
         new Uint8Array([firstByte]),
@@ -228,7 +227,7 @@ function dumpItems(
       const header = encodeVarInt(cbor.value.length, MajorType.Array);
       const firstByte = header[0];
       if (firstByte === undefined) {
-        throw new Error('Invalid varint encoding');
+        throw new CborError({ type: 'Custom', message: 'Invalid varint encoding' });
       }
       const headerData = [
         new Uint8Array([firstByte]),
@@ -251,7 +250,7 @@ function dumpItems(
       const header = encodeVarInt(cbor.value.size, MajorType.Map);
       const firstByte = header[0];
       if (firstByte === undefined) {
-        throw new Error('Invalid varint encoding');
+        throw new CborError({ type: 'Custom', message: 'Invalid varint encoding' });
       }
       const headerData = [
         new Uint8Array([firstByte]),
@@ -274,7 +273,7 @@ function dumpItems(
     case MajorType.Tagged: {
       const tagValue = cbor.tag;
       if (tagValue === undefined) {
-        throw new Error('Tagged CBOR value must have a tag');
+        throw new CborError({ type: 'Custom', message: 'Tagged CBOR value must have a tag' });
       }
       const header = encodeVarInt(
         typeof tagValue === 'bigint' ? Number(tagValue) : tagValue,
@@ -282,7 +281,7 @@ function dumpItems(
       );
       const firstByte = header[0];
       if (firstByte === undefined) {
-        throw new Error('Invalid varint encoding');
+        throw new CborError({ type: 'Custom', message: 'Invalid varint encoding' });
       }
       const headerData = [
         new Uint8Array([firstByte]),
@@ -292,13 +291,11 @@ function dumpItems(
       const noteComponents: string[] = [`tag(${tagValue})`];
 
       // Add tag name if tags store is provided
-      if (opts.tagsStore !== undefined) {
-        const numericTagValue = typeof tagValue === 'bigint' ? Number(tagValue) : tagValue;
-        const tag = createTag(numericTagValue);
-        const tagName = opts.tagsStore.assignedNameForTag(tag);
-        if (tagName !== undefined) {
-          noteComponents.push(tagName);
-        }
+      const numericTagValue = typeof tagValue === 'bigint' ? Number(tagValue) : tagValue;
+      const tag = createTag(numericTagValue);
+      const tagName = opts.tagsStore?.assignedNameForTag(tag);
+      if (tagName !== undefined) {
+        noteComponents.push(tagName);
       }
 
       const tagNote = noteComponents.join(' ');

@@ -17,9 +17,9 @@ import { binary16ToNumber, binary32ToNumber, numberToBinary16, numberToBinary32 
 // and bigint for values that exceed Number.MAX_SAFE_INTEGER
 
 // Helper to check if a number has a fractional part
-function hasFract(n: number): boolean {
+const hasFract = (n: number): boolean => {
   return n % 1 !== 0;
-}
+};
 
 /**
  * Exact conversions for i16 (-32768 to 32767).
@@ -625,7 +625,7 @@ export class ExactF64 {
 }
 
 // Helper function to count trailing zeros in a bigint
-function countTrailingZeros(n: bigint): number {
+const countTrailingZeros = (n: bigint): number => {
   if (n === 0n) return 0;
   let count = 0;
   while ((n & 1n) === 0n) {
@@ -633,7 +633,7 @@ function countTrailingZeros(n: bigint): number {
     n = n >> 1n;
   }
   return count;
-}
+};
 
 // ============================================================================
 // CBOR Type Extraction Utilities
@@ -645,18 +645,18 @@ import { type Cbor, MajorType } from './cbor';
  * Extract exact unsigned integer value.
  * Returns undefined if not an unsigned integer.
  */
-export function exactUnsigned(cbor: Cbor): number | bigint | undefined {
+export const exactUnsigned = (cbor: Cbor): number | bigint | undefined => {
   if (cbor.type === MajorType.Unsigned) {
     return cbor.value;
   }
   return undefined;
-}
+};
 
 /**
  * Extract exact negative integer value (as actual negative number).
  * Returns undefined if not a negative integer.
  */
-export function exactNegative(cbor: Cbor): number | bigint | undefined {
+export const exactNegative = (cbor: Cbor): number | bigint | undefined => {
   if (cbor.type === MajorType.Negative) {
     if (typeof cbor.value === 'bigint') {
       return -(cbor.value + 1n);
@@ -664,45 +664,45 @@ export function exactNegative(cbor: Cbor): number | bigint | undefined {
     return -(cbor.value + 1);
   }
   return undefined;
-}
+};
 
 /**
  * Extract exact integer value (unsigned or negative).
  * Returns undefined if not an integer.
  */
-export function exactInteger(cbor: Cbor): number | bigint | undefined {
+export const exactInteger = (cbor: Cbor): number | bigint | undefined => {
   return exactUnsigned(cbor) ?? exactNegative(cbor);
-}
+};
 
 /**
  * Extract exact string value.
  * Returns undefined if not a text string.
  */
-export function exactString(cbor: Cbor): string | undefined {
+export const exactString = (cbor: Cbor): string | undefined => {
   if (cbor.type === MajorType.Text) {
     return cbor.value;
   }
   return undefined;
-}
+};
 
 /**
  * Extract exact byte string value.
  * Returns undefined if not a byte string.
  */
-export function exactBytes(cbor: Cbor): Uint8Array | undefined {
+export const exactBytes = (cbor: Cbor): Uint8Array | undefined => {
   if (cbor.type === MajorType.ByteString) {
     return cbor.value;
   }
   return undefined;
-}
+};
 
 /**
  * Extract exact array value.
  * Returns undefined if not an array.
  */
-export function exactArray(cbor: Cbor): Cbor[] | undefined {
+export const exactArray = (cbor: Cbor): readonly Cbor[] | undefined => {
   if (cbor.type === MajorType.Array) {
     return cbor.value;
   }
   return undefined;
-}
+};

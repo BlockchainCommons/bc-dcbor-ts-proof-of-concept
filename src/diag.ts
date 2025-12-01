@@ -71,14 +71,14 @@ export interface DiagFormatOpts {
 /**
  * Default formatting options.
  */
-const DEFAULT_OPTS: DiagFormatOpts = {
+const DEFAULT_OPTS = {
   annotate: false,
   summarize: false,
   flat: false,
-  tags: 'global',
+  tags: 'global' as const,
   indent: 0,
   indentString: '    ' // 4 spaces to match Rust
-};
+} as const satisfies DiagFormatOpts;
 
 /**
  * Format CBOR value as diagnostic notation with options.
@@ -271,7 +271,7 @@ function formatText(value: string): string {
 /**
  * Format array.
  */
-function formatArray(items: Cbor[], opts: DiagFormatOpts): string {
+function formatArray(items: readonly Cbor[], opts: DiagFormatOpts): string {
   if (items.length === 0) {
     return '[]';
   }
@@ -308,7 +308,7 @@ function formatArray(items: Cbor[], opts: DiagFormatOpts): string {
 /**
  * Check if items contain complex structures (arrays or maps).
  */
-function containsComplexStructure(items: Cbor[]): boolean {
+function containsComplexStructure(items: readonly Cbor[]): boolean {
   return items.some(item =>
     item.type === MajorType.Array ||
     item.type === MajorType.Map
@@ -377,11 +377,9 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
   // Check for summarizer first
   if (opts.summarize === true) {
     const store = resolveTagsStore(opts.tags);
-    if (store !== undefined) {
-      const summarizer = store.summarizer(tag);
-      if (summarizer !== undefined) {
-        return summarizer(content, opts.flat ?? false);
-      }
+    const summarizer = store?.summarizer(tag);
+    if (summarizer !== undefined) {
+      return summarizer(content, opts.flat ?? false);
     }
   }
 
@@ -389,12 +387,10 @@ function formatTagged(tag: number | bigint, content: Cbor, opts: DiagFormatOpts)
   let comment: string | undefined;
   if (opts.annotate === true) {
     const store = resolveTagsStore(opts.tags);
-    if (store !== undefined) {
-      const tagObj: Tag = { value: tag };
-      const assignedName = store.assignedNameForTag(tagObj);
-      if (assignedName !== undefined) {
-        comment = assignedName;
-      }
+    const tagObj: Tag = { value: tag };
+    const assignedName = store?.assignedNameForTag(tagObj);
+    if (assignedName !== undefined) {
+      comment = assignedName;
     }
   }
 

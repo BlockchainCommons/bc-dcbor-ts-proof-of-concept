@@ -18,11 +18,8 @@
 import { execSync } from 'child_process';
 import {
   cbor,
-  CborEncodable,
+  CborInput,
   CborMap,
-  diagnosticFlat,
-  hex,
-  hexAnnotated,
   decodeCbor
 } from '../src';
 
@@ -79,7 +76,7 @@ function runDcborWithInput(args: string[], input: string): string {
  * Parse a diagnostic notation string into a CBOR value
  * Handles: numbers, strings, booleans, null, arrays, maps
  */
-function parseDiagnostic(input: string): CborEncodable {
+function parseDiagnostic(input: string): CborInput {
   // Trim whitespace
   input = input.trim();
 
@@ -106,7 +103,7 @@ function parseDiagnostic(input: string): CborEncodable {
     const content = input.slice(1, -1).trim();
     if (content === '') return [];
 
-    const elements: CborEncodable[] = [];
+    const elements: CborInput[] = [];
     let depth = 0;
     let current = '';
     let inString = false;
@@ -199,25 +196,25 @@ function parseDiagnostic(input: string): CborEncodable {
 /**
  * Convert a value to hex output (matching CLI format)
  */
-function toHex(value: CborEncodable): string {
+function toHex(value: CborInput): string {
   const cborValue = cbor(value);
-  return hex(cborValue);
+  return cborValue.toHex();
 }
 
 /**
  * Convert a value to diagnostic output (matching CLI format)
  */
-function toDiagnostic(value: CborEncodable): string {
+function toDiagnostic(value: CborInput): string {
   const cborValue = cbor(value);
-  return diagnosticFlat(cborValue);
+  return cborValue.toString();
 }
 
 /**
  * Convert a value to annotated hex output (matching CLI format)
  */
-function toAnnotatedHex(value: CborEncodable): string {
+function toAnnotatedHex(value: CborInput): string {
   const cborValue = cbor(value);
-  return hexAnnotated(cborValue);
+  return cborValue.toHexAnnotated();
 }
 
 /**
@@ -235,7 +232,7 @@ function hexToDiagnostic(hexStr: string): string {
 
   // Decode and convert to diagnostic
   const decoded = decodeCbor(bytes);
-  return diagnosticFlat(decoded);
+  return decoded.toString();
 }
 
 /**
@@ -491,7 +488,7 @@ describe('CLI Tests - Default Command Conversions (vs dcbor CLI)', () => {
   });
 
   test('round_trip_conversions', () => {
-    const testValues: Array<[string, CborEncodable]> = [
+    const testValues: Array<[string, CborInput]> = [
       ['42', 42],
       ['"test"', 'test'],
       ['true', true],

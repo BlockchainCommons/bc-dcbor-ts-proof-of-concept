@@ -7,9 +7,9 @@
  *
  * The main interfaces are:
  *
- * - `CBOREncodable`: For types that can be encoded to CBOR
- * - `CBORDecodable`: For types that can be decoded from CBOR
- * - `CBORCodable`: For types that can do both (a combination of the above)
+ * - `CborEncodable`: For types that can be encoded to CBOR
+ * - `CborDecodable`: For types that can be decoded from CBOR
+ * - `CborCodable`: For types that can do both (a combination of the above)
  *
  * These interfaces allow for ergonomic conversions using TypeScript's type system and
  * enable seamless integration with dCBOR's deterministic encoding rules.
@@ -28,7 +28,7 @@ import type { Cbor } from './cbor';
  * @example
  * ```typescript
  * // Custom type that can convert to CBOR
- * class Person implements CBOREncodable {
+ * class Person implements CborEncodable {
  *   constructor (public name: string, public age: number) {}
  *
  *   toCbor(): Cbor {
@@ -53,7 +53,7 @@ import type { Cbor } from './cbor';
  * const data = person.toCborData();
  * ```
  */
-export interface CBOREncodable {
+export interface CborEncodable {
   /**
    * Converts this value to a CBOR object.
    *
@@ -82,7 +82,7 @@ export interface CBOREncodable {
  * @example
  * ```typescript
  * // Custom type that can be decoded from CBOR
- * class Person implements CBORDecodable<Person> {
+ * class Person implements CborDecodable<Person> {
  *   constructor(public name: string = '', public age: number = 0) {}
  *
  *   static fromCbor(cbor: Cbor): Person {
@@ -105,7 +105,7 @@ export interface CBOREncodable {
  * const person = Person.fromCbor(cborMap);
  * ```
  */
-export interface CBORDecodable<T> {
+export interface CborDecodable<T> {
   /**
    * Try to create an instance from a CBOR value.
    *
@@ -120,7 +120,7 @@ export interface CBORDecodable<T> {
  * Interface for types that can be both encoded to and decoded from CBOR.
  *
  * This interface is a convenience marker for types that implement both
- * `CBOREncodable` and `CBORDecodable`. It serves to indicate full CBOR
+ * `CborEncodable` and `CborDecodable`. It serves to indicate full CBOR
  * serialization support.
  *
  * @typeParam T - The type being encoded/decoded
@@ -128,7 +128,7 @@ export interface CBORDecodable<T> {
  * @example
  * ```typescript
  * // Custom type that implements both conversion directions
- * class Person implements CBORCodable<Person> {
+ * class Person implements CborCodable<Person> {
  *   constructor(public name: string = '', public age: number = 0) {}
  *
  *   // Implement encoding to CBOR
@@ -159,12 +159,12 @@ export interface CBORDecodable<T> {
  *   }
  * }
  *
- * // Person now implements CBORCodable
+ * // Person now implements CborCodable
  * const person = new Person('Alice', 30);
- * const cborValue = person.toCbor(); // Using CBOREncodable
+ * const cborValue = person.toCbor(); // Using CborEncodable
  *
  * // Create a round-trip copy
- * const personCopy = Person.fromCbor(cborValue); // Using CBORDecodable
+ * const personCopy = Person.fromCbor(cborValue); // Using CborDecodable
  * ```
  */
-export interface CBORCodable<T> extends CBOREncodable, CBORDecodable<T> {}
+export interface CborCodable<T> extends CborEncodable, CborDecodable<T> {}

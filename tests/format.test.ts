@@ -12,14 +12,9 @@
 import {
   cbor,
   Cbor,
-  CborEncodable,
+  CborInput,
   CborMap,
-  diagnostic,
-  diagnosticFlat,
-  diagnosticAnnotated,
   summary,
-  hex,
-  hexAnnotated,
   registerTags,
   CborDate
 } from '../src';
@@ -27,7 +22,7 @@ import { getGlobalTagsStore } from '../src/tags-store';
 import type { MapEntry } from '../src/map';
 
 // Helper function to get description (matches Rust's format!("{}", cbor))
-function cborDescription(value: CborEncodable): string {
+function cborDescription(value: CborInput): string {
   const cborValue = cbor(value);
   // Matches Rust's Display trait - uses tag names instead of numbers
   return formatAsDisplay(cborValue);
@@ -97,7 +92,7 @@ function formatAsDisplay(cborValue: Cbor): string {
 }
 
 // Helper function to get debug description (matches Rust's format!("{:?}", cbor))
-function cborDebugDescription(value: CborEncodable): string {
+function cborDebugDescription(value: CborInput): string {
   const cborValue = cbor(value);
   // Generate debug format with type information
   return generateDebugDescription(cborValue);
@@ -173,47 +168,47 @@ function generateDebugDescription(cborValue: Cbor): string {
 }
 
 // Helper function to get diagnostic output (matches Rust's cbor.diagnostic())
-function cborDiagnostic(value: CborEncodable): string {
+function cborDiagnostic(value: CborInput): string {
   const cborValue = cbor(value);
   // Use library's diagnostic function (flat output)
-  return diagnostic(cborValue);
+  return cborValue.toDiagnostic();
 }
 
 
 // Helper function to get annotated diagnostic (matches Rust's cbor.diagnostic_annotated())
-function cborDiagnosticAnnotated(value: CborEncodable): string {
+function cborDiagnosticAnnotated(value: CborInput): string {
   const cborValue = cbor(value);
-  return diagnosticAnnotated(cborValue);
+  return cborValue.toDiagnosticAnnotated();
 }
 
 // Helper function to get flat diagnostic (matches Rust's cbor.diagnostic_flat())
-function cborDiagnosticFlat(value: CborEncodable): string {
+function cborDiagnosticFlat(value: CborInput): string {
   const cborValue = cbor(value);
-  return diagnosticFlat(cborValue);
+  return cborValue.toString();
 }
 
 // Helper function to get summary (matches Rust's cbor.summary())
-function cborSummary(value: CborEncodable): string {
+function cborSummary(value: CborInput): string {
   const cborValue = cbor(value);
   return summary(cborValue);
 }
 
 // Helper function to get hex (matches Rust's cbor.hex())
-function cborHex(value: CborEncodable): string {
+function cborHex(value: CborInput): string {
   const cborValue = cbor(value);
-  return hex(cborValue);
+  return cborValue.toHex();
 }
 
 // Helper function to get annotated hex (matches Rust's cbor.hex_annotated())
-function cborHexAnnotated(value: CborEncodable): string {
+function cborHexAnnotated(value: CborInput): string {
   const cborValue = cbor(value);
-  return hexAnnotated(cborValue);
+  return cborValue.toHexAnnotated();
 }
 
 // Main test runner function - matches Rust's run() function
 function run(
   testName: string,
-  cborValue: CborEncodable,
+  cborValue: CborInput,
   expectedDescription: string,
   expectedDebugDescription: string,
   expectedDiagnostic: string,
@@ -652,9 +647,9 @@ describe('format tests', () => {
   });
 
   test('format_structure', () => {
-    const _encodedCborHex = 'd83183015829536f6d65206d7973746572696573206172656e2774206d65616e7420746f20626520736f6c7665642e82d902c3820158402b9238e19eafbc154b49ec89edd4e0fb1368e97332c6913b4beb637d1875824f3e43bd7fb0c41fb574f08ce00247413d3ce2d9466e0ccfa4a89b92504982710ad902c3820158400f9c7af36804ffe5313c00115e5a31aa56814abaa77ff301da53d48613496e9c51a98b36d55f6fb5634fdb0123910cfa4904f1c60523df41013dc3749b377900';
     // For this test, we would need to decode from hex first
-    // const cborValue = decodeCbor(hexToBytes(_encodedCborHex));
+    // Example hex: 'd83183015829536f6d65206d7973746572696573206172656e2774206d65616e7420746f20626520736f6c7665642e82d902c3820158402b9238e19eafbc154b49ec89edd4e0fb1368e97332c6913b4beb637d1875824f3e43bd7fb0c41fb574f08ce00247413d3ce2d9466e0ccfa4a89b92504982710ad902c3820158400f9c7af36804ffe5313c00115e5a31aa56814abaa77ff301da53d48613496e9c51a98b36d55f6fb5634fdb0123910cfa4904f1c60523df41013dc3749b377900'
+    // const cborValue = decodeCbor(hexToBytes(encodedCborHex));
     // For now, skip complex structure test
     // This would require full hex decoding and structure testing
   });

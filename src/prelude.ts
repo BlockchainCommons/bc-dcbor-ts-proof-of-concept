@@ -30,10 +30,10 @@ export type {
 } from './cbor';
 
 // Codable interfaces
-export type { CBOREncodable, CBORDecodable, CBORCodable } from './cbor-codable';
+export type { CborEncodable, CborDecodable, CborCodable } from './cbor-codable';
 
 // Tagged value interfaces
-export type { CBORTagged, CBORTaggedEncodable, CBORTaggedDecodable, CBORTaggedCodable } from './cbor-tagged';
+export type { CborTagged, CborTaggedEncodable, CborTaggedDecodable, CborTaggedCodable } from './cbor-tagged';
 
 // Map and Set classes
 export { CborMap } from './map';
@@ -62,5 +62,5 @@ export type { WalkElement, EdgeTypeVariant, Visitor } from './walk';
 
 // Error handling
 export type { Error, Result } from './error';
-export { Ok, Err, errorMsg, errorToString, throwError } from './error';
+export { Ok, Err, errorMsg, errorToString, CborError } from './error';
 

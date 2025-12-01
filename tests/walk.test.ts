@@ -39,16 +39,24 @@
 
 import {
   cbor,
-  CborEncodable,
+  CborInput,
   CborMap,
-  walk,
   WalkElement,
-  diagnosticFlat
+  toTaggedValue
 } from '../src';
 import { EdgeTypeVariant } from '../src/walk';
 
+// Helper function to format WalkElement as diagnostic string
+function formatElement(element: WalkElement): string {
+  if (element.type === 'single') {
+    return element.cbor.toString();
+  } else {
+    return `${element.key.toString()}: ${element.value.toString()}`;
+  }
+}
+
 // Helper function to count total visits
-function countVisits(cborValue: CborEncodable): number {
+function countVisits(cborValue: CborInput): number {
   let count = 0;
   const visitor = (
     _element: WalkElement,
@@ -60,7 +68,7 @@ function countVisits(cborValue: CborEncodable): number {
     return [state, false];
   };
 
-  walk(cbor(cborValue), undefined, visitor);
+  cbor(cborValue).walk(undefined, visitor);
   return count;
 }
 
@@ -131,7 +139,7 @@ describe('walk tests', () => {
       return [state, false];
     };
 
-    walk(cbor(array), undefined, visitor);
+    cbor(array).walk(undefined, visitor);
     expect(evenCount).toBe(2); // 2 and 4 are even
   });
 
@@ -155,7 +163,7 @@ describe('walk tests', () => {
       state: void
     ): [void, boolean] => {
       const edgeStr = edge.type === 'array_element' ? `ArrayElement(${edge.index})` : edge.type;
-      const desc = `L${level}: ${edgeStr} - ${diagnosticFlat(element)}`;
+      const desc = `L${level}: ${edgeStr} - ${formatElement(element)}`;
       visitLog.push(desc);
 
       // Check if this is our abort marker
@@ -182,7 +190,7 @@ describe('walk tests', () => {
       return [state, stop];
     };
 
-    walk(cbor(nestedStructure), undefined, visitor);
+    cbor(nestedStructure).walk(undefined, visitor);
 
     const logStr = visitLog.join('\n');
 
@@ -245,7 +253,7 @@ describe('walk tests', () => {
       return [state, stop];
     };
 
-    walk(cbor(level1), undefined, visitor);
+    cbor(level1).walk(undefined, visitor);
 
     expect(elementsByLevel[0] || 0).toBe(1); // Root
     expect(elementsByLevel[1] || 0).toBe(3); // 1 kv pair + 2 individual key/value
@@ -294,7 +302,7 @@ describe('walk tests', () => {
       return [state, false];
     };
 
-    walk(cbor(document), undefined, visitor);
+    cbor(document).walk(undefined, visitor);
 
     // Should find all text strings in the structure
     expect(texts).toContain('Important Document');
@@ -329,13 +337,13 @@ describe('walk tests', () => {
       state: void
     ): [void, boolean] => {
       const desc = element.type === 'single'
-        ? `Single(${diagnosticFlat(element)})`
-        : `KeyValue(${diagnosticFlat(element)})`;
+        ? `Single(${formatElement(element)})`
+        : `KeyValue(${formatElement(element)})`;
       traversalLog.push([desc, edge]);
       return [state, false];
     };
 
-    walk(cbor(map), undefined, visitor);
+    cbor(map).walk(undefined, visitor);
 
     // Verify root visit
     const firstLog = traversalLog[0];
@@ -364,8 +372,8 @@ describe('walk tests', () => {
   /// Test tagged value traversal
   test('test_tagged_value_traversal', () => {
     // Create nested tagged values
-    const innerTagged = { isCbor: true as const, type: 6 as const, tag: 123, value: cbor([1, 2, 3]) };
-    const outerTagged = { isCbor: true as const, type: 6 as const, tag: 456, value: innerTagged };
+    const innerTagged = toTaggedValue(123, [1, 2, 3]);
+    const outerTagged = toTaggedValue(456, innerTagged);
 
     const edgeLog: EdgeTypeVariant[] = [];
 
@@ -379,7 +387,7 @@ describe('walk tests', () => {
       return [state, false];
     };
 
-    walk(outerTagged, undefined, visitor);
+    outerTagged.walk(undefined, visitor);
 
     // Should see: None (root), TaggedContent, TaggedContent, ArrayElement(0),
     // ArrayElement(1), ArrayElement(2)
@@ -432,7 +440,7 @@ describe('walk tests', () => {
       return [state, false];
     };
 
-    walk(cbor(map), undefined, visitor);
+    cbor(map).walk(undefined, visitor);
 
     // Should have 2 key-value pairs and 4 individual key/value visits
     expect(keyvalueCount).toBe(2);
@@ -456,7 +464,7 @@ describe('walk tests', () => {
       state: void
     ): [void, boolean] => {
       const edgeStr = edge.type === 'array_element' ? `ArrayElement(${edge.index})` : edge.type;
-      const desc = `L${level}: ${edgeStr} - ${diagnosticFlat(element)}`;
+      const desc = `L${level}: ${edgeStr} - ${formatElement(element)}`;
       visitLog.push(desc);
 
       // Stop descent into the first nested array (at index 0)
@@ -464,7 +472,7 @@ describe('walk tests', () => {
       return [state, stop];
     };
 
-    walk(cbor(nested), undefined, visitor);
+    cbor(nested).walk(undefined, visitor);
 
     const logStr = visitLog.join('\n');
 
@@ -572,7 +580,7 @@ describe('walk tests', () => {
       return [state, false];
     };
 
-    walk(cbor(person), undefined, visitor);
+    cbor(person).walk(undefined, visitor);
 
     // Verify we found all expected strings
     expect(strings).toContain('John Doe');

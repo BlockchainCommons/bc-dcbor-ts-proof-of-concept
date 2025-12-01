@@ -24,6 +24,7 @@ import * as byteData from "byte-data";
 import { encodeVarInt } from './varint';
 import { MajorType } from './cbor';
 import { ExactU64, ExactU32, ExactU16, ExactI128 } from './exact';
+import { CborError } from './error';
 
 /**
  * Canonical NaN representation in CBOR: 0xf97e00
@@ -33,49 +34,47 @@ export const CBOR_NAN = new Uint8Array([0xf9, 0x7e, 0x00]);
 /**
  * Check if a number has a fractional part.
  */
-export function hasFractionalPart(n: number): boolean {
-  return n !== Math.floor(n);
-}
+export const hasFractionalPart = (n: number): boolean => n !== Math.floor(n);
 
 /**
  * Convert 64-bit binary to number.
  * @internal
  */
-export function binary64ToNumber(data: Uint8Array): number {
+export const binary64ToNumber = (data: Uint8Array): number => {
   return byteData.unpack(data, { bits: 64, fp: true, be: true });
-}
+};
 
 /**
  * Convert number to 32-bit float binary (big-endian).
  */
-export function numberToBinary32(n: number): Uint8Array {
+export const numberToBinary32 = (n: number): Uint8Array => {
   const data = new Uint8Array(4);
   byteData.packTo(n, { bits: 32, fp: true, be: true }, data);
   return data;
-}
+};
 
 /**
  * Convert 32-bit binary to number.
  */
-export function binary32ToNumber(data: Uint8Array): number {
+export const binary32ToNumber = (data: Uint8Array): number => {
   return byteData.unpack(data, { bits: 32, fp: true, be: true });
-}
+};
 
 /**
  * Convert number to 16-bit float binary (big-endian).
  */
-export function numberToBinary16(n: number): Uint8Array {
+export const numberToBinary16 = (n: number): Uint8Array => {
   const data = new Uint8Array(2);
   byteData.packTo(n, { bits: 16, fp: true, be: true }, data);
   return data;
-}
+};
 
 /**
  * Convert 16-bit binary to number.
  */
-export function binary16ToNumber(data: Uint8Array): number {
+export const binary16ToNumber = (data: Uint8Array): number => {
   return byteData.unpack(data, { bits: 16, fp: true, be: true });
-}
+};
 
 /**
  * Encode f64 value to CBOR data bytes.
@@ -83,7 +82,7 @@ export function binary16ToNumber(data: Uint8Array): number {
  * Matches Rust's f64_cbor_data function.
  * @internal
  */
-export function f64CborData(value: number): Uint8Array {
+export const f64CborData = (value: number): Uint8Array => {
   const n = value;
 
   // Try to reduce to f32 first
@@ -125,7 +124,7 @@ export function f64CborData(value: number): Uint8Array {
   const bytes = new Uint8Array(buffer);
   const majorByte = 0xfb; // 0x1b | (MajorType.Simple << 5) = 0x1b | 0xe0 = 0xfb
   return new Uint8Array([majorByte, ...bytes]);
-}
+};
 
 /**
  * Validate canonical encoding for f64.
@@ -133,14 +132,14 @@ export function f64CborData(value: number): Uint8Array {
  *
  * TODO: Check if this is legacy code
  */
-export function validateCanonicalF64(n: number): void {
+export const validateCanonicalF64 = (n: number): void => {
   const f32Bytes = numberToBinary32(n);
   const f32 = binary32ToNumber(f32Bytes);
 
   if (n === f32 || n === Math.trunc(n) || Number.isNaN(n)) {
-    throw new Error('NonCanonicalNumeric: f64 should be reduced');
+    throw new CborError({ type: 'NonCanonicalNumeric' });
   }
-}
+};
 
 /**
  * Encode f32 value to CBOR data bytes.
@@ -148,7 +147,7 @@ export function validateCanonicalF64(n: number): void {
  * Matches Rust's f32_cbor_data function.
  * @internal
  */
-export function f32CborData(value: number): Uint8Array {
+export const f32CborData = (value: number): Uint8Array => {
   const n = value;
 
   // Try to reduce to f16
@@ -181,7 +180,7 @@ export function f32CborData(value: number): Uint8Array {
   // Encode as f32 - always use 0xfa prefix with 4 bytes
   const bytes = numberToBinary32(n);
   return new Uint8Array([0xfa, ...bytes]);
-}
+};
 
 /**
  * Validate canonical encoding for f32.
@@ -189,14 +188,14 @@ export function f32CborData(value: number): Uint8Array {
  *
  * TODO: Check if this is legacy code
  */
-export function validateCanonicalF32(n: number): void {
+export const validateCanonicalF32 = (n: number): void => {
   const f16Bytes = numberToBinary16(n);
   const f16 = binary16ToNumber(f16Bytes);
 
   if (n === f16 || n === Math.trunc(n) || Number.isNaN(n)) {
-    throw new Error('NonCanonicalNumeric: f32 should be reduced');
+    throw new CborError({ type: 'NonCanonicalNumeric' });
   }
-}
+};
 
 /**
  * Encode f16 value to CBOR data bytes.
@@ -204,7 +203,7 @@ export function validateCanonicalF32(n: number): void {
  * Matches Rust's f16_cbor_data function.
  * @internal
  */
-export function f16CborData(value: number): Uint8Array {
+export const f16CborData = (value: number): Uint8Array => {
   const n = value;
 
   // Try numeric reduction to negative integer
@@ -230,7 +229,7 @@ export function f16CborData(value: number): Uint8Array {
   // Encode as f16 - always use 0xf9 prefix with 2 bytes
   const bytes = numberToBinary16(value);
   return new Uint8Array([0xf9, ...bytes]);
-}
+};
 
 /**
  * Validate canonical encoding for f16.
@@ -238,7 +237,7 @@ export function f16CborData(value: number): Uint8Array {
  *
  * TODO: Check if this is legacy code
  */
-export function validateCanonicalF16(value: number): void {
+export const validateCanonicalF16 = (value: number): void => {
   const n = value;
   const f = n;
 
@@ -246,9 +245,9 @@ export function validateCanonicalF16(value: number): void {
   const bits = new DataView(f16Bytes.buffer).getUint16(0, false);
 
   if (f === Math.trunc(f) || (Number.isNaN(value) && bits !== 0x7e00)) {
-    throw new Error('NonCanonicalNumeric: f16 not canonical');
+    throw new CborError({ type: 'NonCanonicalNumeric' });
   }
-}
+};
 
 /**
  * Convert the smallest possible float binary representation to number.
@@ -256,7 +255,7 @@ export function validateCanonicalF16(value: number): void {
  * are not reducible to smaller ones.
  * @internal
  */
-export function numberToBinary(n: number): Uint8Array {
+export const numberToBinary = (n: number): Uint8Array => {
   if (Number.isNaN(n)) {
     return new Uint8Array([0x7e, 0x00]);
   }
@@ -277,4 +276,4 @@ export function numberToBinary(n: number): Uint8Array {
   const view = new DataView(buffer);
   view.setFloat64(0, n, false); // big-endian
   return new Uint8Array(buffer);
-}
+};
